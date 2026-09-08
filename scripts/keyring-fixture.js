@@ -1,6 +1,6 @@
 // Compiled only by smoke tests; never included in release artifacts.
 import assert from 'node:assert/strict';
-import { AsyncEntry } from '@napi-rs/keyring';
+const { AsyncEntry } = await import('@napi-rs/keyring');
 
 const [id, operation] = process.argv.slice(2);
 assert.match(id, /^\d{18}$/);
