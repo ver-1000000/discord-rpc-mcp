@@ -24,23 +24,27 @@ AIアシスタントから、手元のDiscordを読み取ったり操作した�
 | `send_activity_join_invite`, `close_activity_request` | アクティビティへの参加リクエストを承認・拒否 |
 | `set_certified_devices` | デバイス情報を設定 |
 
-操作するツールは初期状態では無効です。有効化や必要な権限の設定は、[設定ガイド](docs/configuration.md)を参照してAgentに依頼できます。
-
-読める投稿はDiscordが読み込んでいる範囲です。過去ログ全体の検索や、通常メッセージの送信・編集・削除には対応していません。
-
 ## 使い始める
 
-LinuxとDiscordデスクトップアプリ、ロック解除済みのキーリングが必要です。
+Windows・macOS・Linuxに対応しています。Discordデスクトップアプリと、利用可能なOSの認証情報ストアが必要です(LinuxではSecret Service対応のキーリング)。
 
 1. 実行ファイルを用意する([ビルド手順](docs/development.md))
 2. [Discord Developer Portal](https://discord.com/developers/applications)でアプリケーションを作り、OAuth2のリダイレクトURIに`http://127.0.0.1:8765/callback`を追加する
 3. [.env.example](.env.example)を`.env`にコピーし、アプリケーションIDとクライアントシークレットを入力する
 4. Discordを起動して、次を実行する
 
+macOS・Linux:
+
 ```sh
 chmod 600 .env
 chmod +x discord-rpc-mcp
 ./discord-rpc-mcp --env-file .env login
+```
+
+Windows (PowerShell):
+
+```powershell
+.\discord-rpc-mcp.exe --env-file .env login
 ```
 
 Discordの確認画面で承認してください。認証情報は保存され、次回以降も再利用されます。
@@ -58,12 +62,20 @@ MCPクライアントに次の設定を追加します。パスは自分の環�
 }
 ```
 
-利用中はDiscordを起動したままにしてください。
+Windowsでは`command`を`C:/path/to/discord-rpc-mcp.exe`のように指定してください。利用中はDiscordを起動したままにしてください。
 
 ---
 
 [設定ガイド](docs/configuration.md) · [開発者向け](docs/development.md) · [DiscordのRPC利用条件](https://docs.discord.com/developers/topics/rpc#restrictions)
 
-投稿の取得でDiscordの表示位置が変わる場合があります。取得内容は利用するAIサービスへ送られる場合があります。
+## 注意事項
 
-MITライセンス。Discordの公式プロジェクトではありません。
+- 初期設定では読み取りのみ有効です。音量変更やチャンネル移動なども使う場合は、`.env`に`DISCORD_ALLOW_CONTROL=1`を設定してください。必要な認可スコープは[設定ガイド](docs/configuration.md)を参照してください
+- 読める投稿はDiscordが読み込んでいる範囲です。過去ログ全体の検索や、通常メッセージの送信・編集・削除には対応していません
+- 投稿の取得でDiscordの表示位置が変わる場合があります
+- 取得した内容は、利用するAIサービスへ送信される場合があります
+- Discordの公式プロジェクトではありません
+
+## ライセンス
+
+[MIT](LICENSE)

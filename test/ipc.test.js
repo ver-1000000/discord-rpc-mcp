@@ -4,6 +4,7 @@ import net from 'node:net';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { Decoder, encode, Rpc, rpcError } from '../src/ipc.js';
 
 test('既知のOAuth原因だけを表示し秘密情報は含めない', () => {
@@ -28,7 +29,7 @@ test('過大なフレームを拒否する', () => {
 
 test('実ソケット上でhandshakeと認可エラーを扱い、エラー本文を漏らさない', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'discord-rpc-test-'));
-  const path = join(dir, 'ipc');
+  const path = process.platform === 'win32' ? `\\\\.\\pipe\\discord-test-${randomUUID()}` : join(dir, 'ipc');
   const server = net.createServer(socket => {
     const decoder = new Decoder();
     socket.on('data', chunk => {

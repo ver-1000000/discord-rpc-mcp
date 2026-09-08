@@ -7,20 +7,21 @@ const unavailable = () => new BridgeError('KEYRING_UNAVAILABLE', 'Start a Secret
 const locked = () => new BridgeError('KEYRING_LOCKED', 'Unlock your desktop keyring and retry.');
 
 export class SecretService {
-  constructor({ busFactory = sessionBus, env = process.env, timeout = 30000 } = {}) {
+  constructor({ busFactory = sessionBus, env = process.env, timeout = 30000, platform = process.platform } = {}) {
+    this.platform = platform;
     this.busFactory = busFactory;
     this.env = env;
     this.timeout = timeout;
   }
 
   async run(operation, attributes, value) {
-    if (process.platform !== 'linux') {
+    if (this.platform !== 'linux') {
       throw new BridgeError('UNSUPPORTED_PLATFORM', 'Credential storage currently supports Linux Secret Service.');
     }
     let bus;
     let timer;
     try {
-      bus = this.busFactory({ busAddress: this.env.DBUS_SESSION_BUS_ADDRESS ?? `unix:path=/run/user/${process.getuid()}/bus`, authMethods: ['EXTERNAL'] });
+      bus = this.busFactory({ busAddress: this.env.DBUS_SESSION_BUS_ADDRESS ?? `unix:path=/run/user/${process.getuid?.() ?? 0}/bus`, authMethods: ['EXTERNAL'] });
       const failure = new Promise((_, reject) => {
         bus.on('error', () => reject(unavailable()));
         timer = setTimeout(() => reject(unavailable()), this.timeout);

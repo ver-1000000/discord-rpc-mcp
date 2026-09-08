@@ -24,23 +24,27 @@ Ask it to read a channel, receive new messages, or turn down someone's volume in
 | `send_activity_join_invite`, `close_activity_request` | Accept or reject activity join requests |
 | `set_certified_devices` | Set device information |
 
-Control tools are disabled by default. An agent with local command access can help enable them and configure permissions using the [configuration guide](docs/configuration.md).
-
-Messages are limited to what Discord has loaded. Full-history search and normal message sending, editing and deletion are not supported.
-
 ## Get started
 
-Requires Linux, the Discord desktop app and an unlocked desktop keyring.
+Supports Windows, macOS and Linux. Requires the Discord desktop app and an available OS credential store (a Secret Service keyring on Linux).
 
 1. Prepare the executable ([build instructions](docs/development.md))
 2. Create an application in the [Discord Developer Portal](https://discord.com/developers/applications) and add `http://127.0.0.1:8765/callback` as its OAuth2 redirect URI
 3. Copy [.env.example](.env.example) to `.env` and enter your application ID and client secret
 4. Start Discord and run:
 
+macOS and Linux:
+
 ```sh
 chmod 600 .env
 chmod +x discord-rpc-mcp
 ./discord-rpc-mcp --env-file .env login
+```
+
+Windows (PowerShell):
+
+```powershell
+.\discord-rpc-mcp.exe --env-file .env login
 ```
 
 Approve the request in Discord. Your credentials are saved and reused on subsequent connections.
@@ -58,12 +62,20 @@ Add this configuration to your MCP client, replacing the paths with your own:
 }
 ```
 
-Keep Discord running while using the server.
+On Windows, use a command path such as `C:/path/to/discord-rpc-mcp.exe`. Keep Discord running while using the server.
 
 ---
 
 [Configuration](docs/configuration.md) · [Development](docs/development.md) · [Discord RPC access requirements](https://docs.discord.com/developers/topics/rpc#restrictions)
 
-Reading messages may move the Discord view. Retrieved content may be sent to your AI service.
+## Notes
 
-MIT licensed. Not affiliated with Discord.
+- Only reading is enabled by default. To change volume, switch channels or perform other actions, set `DISCORD_ALLOW_CONTROL=1` in `.env`. See the [configuration guide](docs/configuration.md) for the required authorization scopes
+- Messages are limited to what Discord has loaded. Full-history search and normal message sending, editing and deletion are not supported
+- Reading messages may move the Discord view
+- Retrieved content may be sent to your AI service
+- Not affiliated with Discord
+
+## License
+
+[MIT](LICENSE)

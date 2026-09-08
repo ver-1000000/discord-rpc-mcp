@@ -1,4 +1,5 @@
 import { SecretService } from './secret-service.js';
+import { NativeKeyring } from './native-keyring.js';
 import { BridgeError } from './errors.js';
 
 export function validateCredentials(value) {
@@ -17,7 +18,7 @@ export function validateCredentials(value) {
 }
 
 export class CredentialStore {
-  constructor(clientId, backend = new SecretService()) {
+  constructor(clientId, backend = process.platform === 'linux' ? new SecretService() : new NativeKeyring()) {
     if (!/^\d{17,20}$/.test(clientId)) throw new BridgeError('INVALID_CONFIG', 'Invalid application ID.');
     this.attributes = { service: 'discord-rpc-mcp', purpose: 'oauth', client_id: clientId };
     this.backend = backend;

@@ -5,18 +5,21 @@ import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { CredentialStore } from '../src/credentials.js';
+import { randomBytes } from 'node:crypto';
 
 const directory = await mkdtemp(join(tmpdir(), 'discord-rpc-mcp-binary-'));
-const executable = join(directory, 'discord-rpc-mcp');
-const env = { PATH: directory, DISCORD_CLIENT_ID: '123456789012345678' };
+const binary = `discord-rpc-mcp${process.platform === 'win32' ? '.exe' : ''}`;
+const executable = join(directory, binary);
+const env = { PATH: directory, DISCORD_CLIENT_ID: '123456789012345678', ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}) };
 const client = new Client({ name: 'binary-smoke', version: '1.0.0' });
 try {
-  await copyFile(resolve('dist/discord-rpc-mcp'), executable);
+  await copyFile(resolve('dist', binary), executable);
   await chmod(executable, 0o755);
   // The executable must neither need external commands nor autoload the working directory's .env.
   await writeFile(join(directory, '.env'), 'DISCORD_ALLOW_CONTROL=1\n');
   await writeFile(join(directory, 'settings.env'), 'DISCORD_CLIENT_ID=123456789012345678\n');
-  assert.match(execFileSync(executable, ['--help'], { cwd: directory, env, timeout: 10000 }).toString(), /Secret Service/);
+  assert.match(execFileSync(executable, ['--help'], { cwd: directory, env, timeout: 10000 }).toString(), /credential store/);
   const transport = new StdioClientTransport({
     command: executable,
     args: ['--env-file', join(directory, 'settings.env')],
@@ -40,6 +43,21 @@ try {
   assert.deepEqual(result.structuredContent.events, []);
   await client.close();
   assert.equal(stderr, '');
+  if (process.platform === 'win32' || process.platform === 'darwin') {
+    // Use an isolated application ID, never a developer's real Discord credentials.
+    const id = (100000000000000000n + BigInt('0x' + randomBytes(7).toString('hex'))).toString();
+    const store = new CredentialStore(id);
+    try {
+      await assert.rejects(store.load(), { code: 'LOGIN_REQUIRED' });
+      await store.save({ access_token: 'SMOKE_TEST_ONLY', expires_at: Date.now() + 3600000 });
+      const output = execFileSync(executable, ['status'], { cwd: directory, env: { ...env, DISCORD_CLIENT_ID: id }, timeout: 30000 }).toString();
+      assert.equal(JSON.parse(output).credentialsStored, true);
+      assert.ok(!output.includes('SMOKE_TEST_ONLY'));
+      execFileSync(executable, ['logout'], { cwd: directory, env: { ...env, DISCORD_CLIENT_ID: id }, timeout: 30000 });
+      await assert.rejects(store.load(), { code: 'LOGIN_REQUIRED' });
+    } finally { await store.clear(); }
+    console.log('Native credential store: source write, standalone read and standalone delete passed.');
+  }
   console.log('Standalone binary: help, explicit env file and MCP stdio passed with an isolated working directory and PATH.');
 } finally {
   await client.close();

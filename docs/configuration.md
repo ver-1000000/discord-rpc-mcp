@@ -18,7 +18,7 @@ Never print client secrets or tokens. Preserve the environment file's restricted
 
 `status` reports stored credential status; it does not test Discord connectivity. `logout` removes stored credentials. Also stop running bridge processes. To revoke authorization, remove the application in Discord's Authorized Apps settings.
 
-Credentials use Linux Secret Service, such as GNOME Keyring or KWallet. The service must run in the same desktop session, with an unlocked default collection for first-time storage. No `secret-tool` executable is needed. Expiring tokens are refreshed when a client secret is available.
+Credentials use Windows Credential Manager, macOS Keychain or Linux Secret Service (such as GNOME Keyring or KWallet). On Linux, the service must run in the same desktop session, with an unlocked default collection for first-time storage. No external keyring command is needed. Expiring tokens are refreshed when a client secret is available.
 
 Environment files are loaded only with `--env-file`. If automatic IPC discovery fails, set `DISCORD_RPC_PATH` to the Discord desktop client's socket.
 

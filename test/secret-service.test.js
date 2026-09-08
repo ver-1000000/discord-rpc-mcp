@@ -23,7 +23,7 @@ function fixture(responses = {}) {
     if (response instanceof Error) throw response;
     return { body: response };
   };
-  const service = new SecretService({ busFactory: () => bus });
+  const service = new SecretService({ busFactory: () => bus, platform: 'linux' });
   return { service, bus, calls, closed: () => disconnected };
 }
 
@@ -109,7 +109,7 @@ test('無応答やソケット障害でも接続を閉じて失敗する', async
   for (const socketError of [false, true]) {
     const f = fixture();
     f.bus.call = () => new Promise(() => {});
-    const service = new SecretService({ busFactory: () => f.bus, timeout: 10 });
+    const service = new SecretService({ busFactory: () => f.bus, timeout: 10, platform: 'linux' });
     const pending = service.read(attributes);
     if (socketError) f.bus.emit('error', new Error('PRIVATE SECRET'));
     await assert.rejects(pending, { code: 'KEYRING_UNAVAILABLE' });

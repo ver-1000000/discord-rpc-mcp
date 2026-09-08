@@ -4,12 +4,13 @@ import net from 'node:net';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { Decoder, encode, Rpc } from '../src/ipc.js';
 
 async function fixture(t, respond) {
   const dir = await mkdtemp(join(tmpdir(), 'discord-rpc-lifecycle-'));
-  const path = join(dir, 'ipc');
+  const path = process.platform === 'win32' ? `\\\\.\\pipe\\discord-test-${randomUUID()}` : join(dir, 'ipc');
   const sockets = new Set();
   const server = net.createServer(socket => {
     sockets.add(socket);

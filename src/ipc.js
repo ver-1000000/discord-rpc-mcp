@@ -39,9 +39,10 @@ export class Decoder {
   }
 }
 
-export async function discover(env = process.env) {
+export async function discover(env = process.env, platform = process.platform) {
+  if (platform === 'win32') return Array.from({ length: 10 }, (_, i) => `\\\\.\\pipe\\discord-ipc-${i}`);
   // Remote shells may not inherit the desktop session's XDG_RUNTIME_DIR.
-  const runtimeFallback = process.platform === 'linux' ? `/run/user/${process.getuid()}` : undefined;
+  const runtimeFallback = platform === 'linux' && process.getuid ? `/run/user/${process.getuid()}` : undefined;
   const roots = [...new Set([env.XDG_RUNTIME_DIR, env.TMPDIR, env.TMP, env.TEMP, '/tmp', runtimeFallback].filter(Boolean))];
   const paths = [];
   for (const root of roots) {

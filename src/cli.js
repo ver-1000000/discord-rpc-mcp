@@ -14,7 +14,7 @@ let server;
 try {
   const args = process.argv.slice(2);
   if (args[0] === '--help' || args[0] === '-h') {
-    console.log('discord-rpc-mcp [--env-file PATH] [serve|login|status|logout]\n\nDefault: serve (stdio). Linux, Discord desktop and an unlocked Secret Service keyring required.\nSet DISCORD_CLIENT_ID. Login and renewal also require DISCORD_CLIENT_SECRET.\nSet DISCORD_ALLOW_CONTROL=1 to expose navigation, voice, activity and invite tools.');
+    console.log('discord-rpc-mcp [--env-file PATH] [serve|login|status|logout]\n\nDefault: serve (stdio). Requires Discord desktop and an available OS credential store.\nSupports Windows, macOS and Linux (Secret Service).\nSet DISCORD_CLIENT_ID. Login and renewal also require DISCORD_CLIENT_SECRET.\nSet DISCORD_ALLOW_CONTROL=1 to expose navigation, voice, activity and invite tools.');
   } else {
     if (args[0] === '--env-file') {
       const file = args[1];
