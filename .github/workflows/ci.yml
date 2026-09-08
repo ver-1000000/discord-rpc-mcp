@@ -48,6 +48,8 @@ jobs:
       - run: npm run build:binary
       - run: npm run test:binary
         timeout-minutes: 2
+      - run: node scripts/smoke-installer.js
+        timeout-minutes: 5
       - uses: actions/upload-artifact@v4
         with:
           name: discord-rpc-mcp-${{ matrix.artifact }}

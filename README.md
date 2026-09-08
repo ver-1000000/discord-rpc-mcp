@@ -28,30 +28,57 @@ Ask it to read a channel, receive new messages, or turn down someone's volume in
 
 Supports Windows, macOS and Linux. Requires the Discord desktop app and an available OS credential store (a Secret Service keyring on Linux).
 
-1. Download and extract the archive for your OS from [Latest Release](https://github.com/ver-1000000/discord-rpc-mcp/releases/latest)
-2. Create an application in the [Discord Developer Portal](https://discord.com/developers/applications) and add `http://127.0.0.1:8765/callback` as its OAuth2 redirect URI
-3. Copy [.env.example](.env.example) to `.env` and enter your application ID and client secret
-4. Start Discord and run:
+### 1. Install
 
 macOS and Linux:
 
 ```sh
-chmod 600 .env
-chmod +x discord-rpc-mcp
-./discord-rpc-mcp --env-file .env login
+curl -fsSL https://raw.githubusercontent.com/ver-1000000/discord-rpc-mcp/main/install.sh | sh
 ```
 
 Windows (PowerShell):
 
 ```powershell
-.\discord-rpc-mcp.exe --env-file .env login
+irm https://raw.githubusercontent.com/ver-1000000/discord-rpc-mcp/main/install.ps1 | iex
+```
+
+The installer selects your platform, verifies the download and creates a configuration file. No administrator privileges, Node.js or Bun required. Existing configuration is preserved.
+
+### 2. Connect Discord
+
+Create an application in the [Discord Developer Portal](https://discord.com/developers/applications) and add `http://127.0.0.1:8765/callback` as its OAuth2 redirect URI. Enter the application ID and client secret in the `.env` file at the path printed by the installer.
+
+Start Discord, then run:
+
+macOS and Linux:
+
+```sh
+"$HOME/.local/share/discord-rpc-mcp/bin/discord-rpc-mcp" --env-file "$HOME/.local/share/discord-rpc-mcp/config/.env" login
+```
+
+Windows (PowerShell):
+
+```powershell
+& "$env:LOCALAPPDATA\discord-rpc-mcp\bin\discord-rpc-mcp.exe" --env-file "$env:LOCALAPPDATA\discord-rpc-mcp\config\.env" login
 ```
 
 Approve the request in Discord. Your credentials are saved and reused on subsequent connections.
 
-For an MCPB-compatible client, open the `.mcpb` file from [Latest Release](https://github.com/ver-1000000/discord-rpc-mcp/releases/latest) and select the same `.env` file.
+### 3. Add to your MCP client
 
-For manual registration, add this configuration to your MCP client, replacing the paths with your own:
+For Codex (macOS/Linux):
+
+```sh
+codex mcp add discord-rpc-mcp -- "$HOME/.local/share/discord-rpc-mcp/bin/discord-rpc-mcp" --env-file "$HOME/.local/share/discord-rpc-mcp/config/.env"
+```
+
+For Codex (Windows PowerShell):
+
+```powershell
+codex mcp add discord-rpc-mcp -- "$env:LOCALAPPDATA\discord-rpc-mcp\bin\discord-rpc-mcp.exe" --env-file "$env:LOCALAPPDATA\discord-rpc-mcp\config\.env"
+```
+
+Add this configuration to your MCP client, using the absolute paths from the installer:
 
 ```json
 {
@@ -65,6 +92,8 @@ For manual registration, add this configuration to your MCP client, replacing th
 ```
 
 On Windows, use a command path such as `C:/path/to/discord-rpc-mcp.exe`. Keep Discord running while using the server.
+
+Prefer a manual download? [Latest Release](https://github.com/ver-1000000/discord-rpc-mcp/releases/latest) includes platform archives and an MCPB bundle. For MCPB-compatible clients, open the `.mcpb` file and select the same `.env` file.
 
 ---
 
