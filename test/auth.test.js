@@ -8,23 +8,24 @@ import { publicError } from '../src/errors.js';
 const settings = { clientId: '123456789012345678', clientSecret: 'CLIENT_SECRET', redirectUri: 'http://127.0.0.1:8765/callback' };
 const token = { access_token: 'ACCESS_SECRET', refresh_token: 'REFRESH_SECRET', expires_at: 200000 };
 
-test('キーリングは専用属性で識別し、秘密情報を引数に含めない', async () => {
+test('キーリングは既存の専用属性で識別し、認証データを保存・取得・削除する', async () => {
   const calls = [];
-  const store = new CredentialStore(settings.clientId, async (args, input) => {
-    calls.push({ args, input });
-    return JSON.stringify(token);
+  const store = new CredentialStore(settings.clientId, {
+    write: async (attributes, input) => calls.push({ attributes, input }),
+    read: async attributes => { calls.push({ attributes }); return JSON.stringify(token); },
+    delete: async attributes => calls.push({ attributes }),
   });
   await store.save(token);
   assert.deepEqual(await store.load(), token);
   await store.clear();
   assert.equal(calls.length, 3);
-  assert.ok(calls.every(call => !JSON.stringify(call.args).includes('SECRET')));
+  assert.ok(calls.every(call => !JSON.stringify(call.attributes).includes('SECRET')));
   assert.match(calls[0].input, /ACCESS_SECRET/);
-  assert.deepEqual(calls[1].args, ['lookup', 'service', 'discord-rpc-mcp', 'purpose', 'oauth', 'client_id', settings.clientId]);
+  assert.deepEqual(calls[1].attributes, { service: 'discord-rpc-mcp', purpose: 'oauth', client_id: settings.clientId });
 });
 
 test('壊れた認証データや不正設定を値の開示なしで拒否する', async () => {
-  const store = new CredentialStore(settings.clientId, async () => 'SECRET');
+  const store = new CredentialStore(settings.clientId, { read: async () => 'SECRET' });
   await assert.rejects(store.load(), { code: 'LOGIN_REQUIRED' });
   assert.throws(() => validateCredentials({ access_token: 'SECRET', expires_at: Infinity }), { code: 'LOGIN_REQUIRED' });
   assert.throws(() => config({ DISCORD_CLIENT_ID: 'SECRET' }), { code: 'CONFIG_REQUIRED' });

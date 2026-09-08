@@ -5,17 +5,33 @@
   "type": "module",
   "license": "MIT",
   "author": "AKAI",
-  "engines": { "node": ">=22" },
-  "bin": { "discord-rpc-mcp": "src/cli.js" },
-  "files": ["src", "assets/icon.svg", ".env.example", "README.md", "LICENSE"],
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "discord-rpc-mcp": "src/cli.js"
+  },
+  "files": [
+    "src",
+    "assets/icon.svg",
+    ".env.example",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "start": "node src/cli.js",
     "test": "node --test",
     "check": "node --check src/cli.js && npm test",
+    "build:binary": "bun build ./src/cli.js --compile --minify --no-compile-autoload-dotenv --no-compile-autoload-bunfig --outfile dist/discord-rpc-mcp && node scripts/prepare-binary.js",
+    "test:binary": "node scripts/smoke-binary.js",
     "prepack": "npm run check"
   },
   "dependencies": {
+    "@jellybrick/dbus-next": "^0.11.3",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "bun": "^1.4.2"
   }
 }
