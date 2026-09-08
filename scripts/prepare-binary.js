@@ -1,10 +1,13 @@
-import { copyFile, readFile, readdir, writeFile, stat } from 'node:fs/promises';
+import { copyFile, readFile, readdir, writeFile, stat, cp, mkdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 
-for (const name of ['LICENSE', 'README.md', '.env.example']) {
+for (const name of ['LICENSE', 'README.md', 'README.ja.md', '.env.example']) {
   await copyFile(name, join('dist', name));
 }
+await cp('docs', 'dist/docs', { recursive: true });
+await mkdir('dist/assets', { recursive: true });
+await copyFile('assets/icon.svg', 'dist/assets/icon.svg');
 const lock = JSON.parse(await readFile('package-lock.json', 'utf8'));
 const notices = ['# Third-party software', 'This executable includes the following npm dependencies.'];
 for (const [directory, pkg] of Object.entries(lock.packages)) {

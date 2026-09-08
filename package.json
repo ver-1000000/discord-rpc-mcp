@@ -16,6 +16,8 @@
     "assets/icon.svg",
     ".env.example",
     "README.md",
+    "README.ja.md",
+    "docs",
     "LICENSE"
   ],
   "scripts": {
