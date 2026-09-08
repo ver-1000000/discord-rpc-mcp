@@ -24,7 +24,7 @@ for (const platform of ['linux-x64', 'windows-x64', 'macos-arm64', 'macos-x64'])
   await chmod(target, 0o755);
   await copyFile(join(source, 'THIRD_PARTY_NOTICES.md'), join(stage, 'licenses', `${platform}.md`));
 }
-for (const name of ['README.md', 'README.ja.md', 'LICENSE', '.env.example', 'assets/icon.png', 'assets/icon.svg', 'docs/configuration.md', 'docs/development.md']) {
+for (const name of ['README.md', 'README.ja.md', 'LICENSE', '.env.example', 'assets/icon.png', 'assets/icon.svg', 'docs/configuration.md', 'docs/development.md', 'docs/installation.md', 'docs/installation.ja.md']) {
   await copyFile(name, join(stage, name));
 }
 await copyFile('mcpb/launch.sh', join(stage, 'server/launch.sh'));

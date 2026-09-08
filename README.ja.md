@@ -6,7 +6,7 @@
 
 [English](README.md)
 
-AIアシスタントから、手元のDiscordを読み取ったり操作したりするためのMCPサーバーです。
+DiscordデスクトップアプリのRPCを、MCPから扱うためのサーバーです。(機能はDiscordのRPCに準拠しているため、過去のチャットの検索などはできません)
 
 「このチャンネルの投稿を見て」「新しい投稿を受け取りたい」「通話相手の音量を下げて」といった使い方ができます。
 
@@ -26,74 +26,32 @@ AIアシスタントから、手元のDiscordを読み取ったり操作した�
 
 ## 使い始める
 
-Windows・macOS・Linuxに対応しています。Discordデスクトップアプリと、利用可能なOSの認証情報ストアが必要です(LinuxではSecret Service対応のキーリング)。
-
 ### 1. インストール
 
-macOS・Linux:
+CodexやClaude Codeなど、端末を操作できるAgentに次を送ってください。
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/ver-1000000/discord-rpc-mcp/main/install.sh | sh
+```text
+次のガイドに沿って、discord-rpc-mcpのインストールと、今使っているMCPクライアントへの登録を進めてください。
+https://github.com/ver-1000000/discord-rpc-mcp/blob/main/docs/installation.ja.md
 ```
 
-Windows (PowerShell):
-
-```powershell
-irm https://raw.githubusercontent.com/ver-1000000/discord-rpc-mcp/main/install.ps1 | iex
-```
-
-OS・CPUに合う配布物を取得し、ハッシュを検証して、設定ファイルを作成します。管理者権限やNode.js・Bunは不要です。既存の設定ファイルは上書きしません。
+自分でコマンドを実行する方やClaude Desktopを使う方は、[インストールガイド](docs/installation.ja.md)をご覧ください。
 
 ### 2. Discordと接続
 
-[Discord Developer Portal](https://discord.com/developers/applications)でアプリケーションを作り、OAuth2のリダイレクトURIに`http://127.0.0.1:8765/callback`を追加してください。インストーラーが表示した場所の`.env`に、アプリケーションIDとクライアントシークレットを入力します。
+Discord側の設定は、次の手順で行ってください。画面名は英語表記です。設定済みのアプリがある場合は再利用できます。
 
-Discordを起動して、次を実行してください。
+1. [Discord Developer Portal](https://discord.com/developers/applications)を開き、Discordにログイン
+2. `New Application` > `Name`に`RPC MCP Bridge`などの名前を入力 > 利用規約を確認してチェック > `Create`
+3. 左メニューの`OAuth2` > `Redirects` > `Add Redirect` > `http://127.0.0.1:8765/callback`を入力 > `Save Changes`
+4. 同じ`OAuth2`画面の`Client ID` > `Copy`でコピーし、Agentが案内した`.env`の`DISCORD_CLIENT_ID=`の右側に貼り付け
+5. `Client Secret`をコピーし、同じファイルの`DISCORD_CLIENT_SECRET=`の右側に貼り付けて保存
+   - 新しく作ったアプリでシークレットが取得できない場合は、`Reset Secret`から発行し、求められた本人確認を完了する
+   - 既存アプリのシークレットをリセットすると、他で使っている設定も更新が必要になるので注意
+6. PCのDiscordデスクトップアプリを起動し、Agentに「設定を保存したので接続を続けて」と伝える
+7. Discordに認可画面が出たら、アプリ名と要求権限を確認して承認
 
-macOS・Linux:
-
-```sh
-"$HOME/.local/share/discord-rpc-mcp/bin/discord-rpc-mcp" --env-file "$HOME/.local/share/discord-rpc-mcp/config/.env" login
-```
-
-Windows (PowerShell):
-
-```powershell
-& "$env:LOCALAPPDATA\discord-rpc-mcp\bin\discord-rpc-mcp.exe" --env-file "$env:LOCALAPPDATA\discord-rpc-mcp\config\.env" login
-```
-
-Discordの確認画面で承認してください。認証情報は保存され、次回以降も再利用されます。
-
-### 3. MCPクライアントに登録
-
-Codex (macOS・Linux):
-
-```sh
-codex mcp add discord-rpc-mcp -- "$HOME/.local/share/discord-rpc-mcp/bin/discord-rpc-mcp" --env-file "$HOME/.local/share/discord-rpc-mcp/config/.env"
-```
-
-Codex (Windows PowerShell):
-
-```powershell
-codex mcp add discord-rpc-mcp -- "$env:LOCALAPPDATA\discord-rpc-mcp\bin\discord-rpc-mcp.exe" --env-file "$env:LOCALAPPDATA\discord-rpc-mcp\config\.env"
-```
-
-MCPクライアントに次の設定を追加します。パスはインストーラーが表示した場所の絶対パスに変更してください。
-
-```json
-{
-  "mcpServers": {
-    "discord-rpc-mcp": {
-      "command": "/absolute/path/bin/discord-rpc-mcp",
-      "args": ["--env-file", "/absolute/path/config/.env"]
-    }
-  }
-}
-```
-
-Windowsでは`command`を`C:/path/to/discord-rpc-mcp.exe`のように指定してください。利用中はDiscordを起動したままにしてください。
-
-手動でダウンロードする場合は、[Latest Release](https://github.com/ver-1000000/discord-rpc-mcp/releases/latest)からOS別の配布物かMCPBを取得できます。MCPB対応クライアントでは、`.mcpb`ファイルを開いて同じ`.env`ファイルを選択してください。
+シークレットはチャットに貼らず、ローカルの`.env`に入力してください。手動で認証を進める場合のコマンドは[インストールガイド](docs/installation.ja.md#2-discordと接続)にあります。
 
 ---
 

@@ -6,7 +6,7 @@
 
 [日本語](README.ja.md)
 
-An MCP server that lets your AI assistant read and control Discord on your computer.
+A server that exposes the Discord desktop app's RPC through MCP. (Functionality follows Discord's RPC capabilities, so features such as searching past chats are not available.)
 
 Ask it to read a channel, receive new messages, or turn down someone's volume in a call.
 
@@ -26,74 +26,32 @@ Ask it to read a channel, receive new messages, or turn down someone's volume in
 
 ## Get started
 
-Supports Windows, macOS and Linux. Requires the Discord desktop app and an available OS credential store (a Secret Service keyring on Linux).
-
 ### 1. Install
 
-macOS and Linux:
+Send this to an agent with terminal access, such as Codex or Claude Code:
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/ver-1000000/discord-rpc-mcp/main/install.sh | sh
+```text
+Install discord-rpc-mcp and register it with my current MCP client using this guide:
+https://github.com/ver-1000000/discord-rpc-mcp/blob/main/docs/installation.md
 ```
 
-Windows (PowerShell):
-
-```powershell
-irm https://raw.githubusercontent.com/ver-1000000/discord-rpc-mcp/main/install.ps1 | iex
-```
-
-The installer selects your platform, verifies the download and creates a configuration file. No administrator privileges, Node.js or Bun required. Existing configuration is preserved.
+For manual setup or Claude Desktop, see the [installation guide](docs/installation.md).
 
 ### 2. Connect Discord
 
-Create an application in the [Discord Developer Portal](https://discord.com/developers/applications) and add `http://127.0.0.1:8765/callback` as its OAuth2 redirect URI. Enter the application ID and client secret in the `.env` file at the path printed by the installer.
+Complete the Discord settings below. Labels use the English interface. You can reuse an application you have already configured.
 
-Start Discord, then run:
+1. Open the [Discord Developer Portal](https://discord.com/developers/applications) and sign in
+2. Select `New Application` > enter a name such as `RPC MCP Bridge` in `Name` > review and accept the terms > `Create`
+3. In the left menu, select `OAuth2` > `Redirects` > `Add Redirect` > enter `http://127.0.0.1:8765/callback` > `Save Changes`
+4. On the same `OAuth2` page, select `Client ID` > `Copy`, then paste it after `DISCORD_CLIENT_ID=` in the local `.env` file indicated by your agent
+5. Copy `Client Secret`, paste it after `DISCORD_CLIENT_SECRET=` in the same file, and save
+   - For a new application without an available secret, use `Reset Secret` and complete any identity verification requested
+   - Resetting an existing application's secret also requires updating any other integrations using it
+6. Start the Discord desktop app on your computer and tell your agent that the configuration is saved and it can continue connecting
+7. When Discord shows an authorization prompt, check the application name and requested permissions, then approve
 
-macOS and Linux:
-
-```sh
-"$HOME/.local/share/discord-rpc-mcp/bin/discord-rpc-mcp" --env-file "$HOME/.local/share/discord-rpc-mcp/config/.env" login
-```
-
-Windows (PowerShell):
-
-```powershell
-& "$env:LOCALAPPDATA\discord-rpc-mcp\bin\discord-rpc-mcp.exe" --env-file "$env:LOCALAPPDATA\discord-rpc-mcp\config\.env" login
-```
-
-Approve the request in Discord. Your credentials are saved and reused on subsequent connections.
-
-### 3. Add to your MCP client
-
-For Codex (macOS/Linux):
-
-```sh
-codex mcp add discord-rpc-mcp -- "$HOME/.local/share/discord-rpc-mcp/bin/discord-rpc-mcp" --env-file "$HOME/.local/share/discord-rpc-mcp/config/.env"
-```
-
-For Codex (Windows PowerShell):
-
-```powershell
-codex mcp add discord-rpc-mcp -- "$env:LOCALAPPDATA\discord-rpc-mcp\bin\discord-rpc-mcp.exe" --env-file "$env:LOCALAPPDATA\discord-rpc-mcp\config\.env"
-```
-
-Add this configuration to your MCP client, using the absolute paths from the installer:
-
-```json
-{
-  "mcpServers": {
-    "discord-rpc-mcp": {
-      "command": "/absolute/path/bin/discord-rpc-mcp",
-      "args": ["--env-file", "/absolute/path/config/.env"]
-    }
-  }
-}
-```
-
-On Windows, use a command path such as `C:/path/to/discord-rpc-mcp.exe`. Keep Discord running while using the server.
-
-Prefer a manual download? [Latest Release](https://github.com/ver-1000000/discord-rpc-mcp/releases/latest) includes platform archives and an MCPB bundle. For MCPB-compatible clients, open the `.mcpb` file and select the same `.env` file.
+Enter the secret in the local `.env` file, not in chat. For manual login commands, see the [installation guide](docs/installation.md#2-connect-discord).
 
 ---
 
