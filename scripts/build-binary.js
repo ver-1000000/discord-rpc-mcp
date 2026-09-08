@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const require = createRequire(import.meta.url);
 const platform = process.platform;
@@ -24,4 +25,10 @@ const result = await Bun.build({
   }],
 });
 if (!result.success) throw new AggregateError(result.logs, 'Binary build failed');
+if (platform === 'darwin') {
+  execFileSync('/usr/bin/codesign', ['--force', '--sign', '-',
+    '--identifier', 'com.ver1000000.discord-rpc-mcp',
+    '--entitlements', 'scripts/macos-entitlements.plist', outfile], { stdio: 'inherit' });
+  execFileSync('/usr/bin/codesign', ['--verify', '--strict', outfile], { stdio: 'inherit' });
+}
 console.log(`Built ${outfile} (${platform}/${process.arch})`);
