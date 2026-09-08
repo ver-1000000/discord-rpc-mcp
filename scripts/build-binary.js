@@ -5,9 +5,9 @@ import { execFileSync } from 'node:child_process';
 const require = createRequire(import.meta.url);
 const platform = process.platform;
 if (!['linux', 'darwin', 'win32'].includes(platform)) throw new Error('Unsupported build platform');
-const outfile = `dist/discord-rpc-mcp${platform === 'win32' ? '.exe' : ''}`;
+const outfile = process.argv[3] ?? `dist/discord-rpc-mcp${platform === 'win32' ? '.exe' : ''}`;
 const result = await Bun.build({
-  entrypoints: ['./src/cli.js'],
+  entrypoints: [process.argv[2] ?? './src/cli.js'],
   minify: true,
   compile: { outfile, autoloadDotenv: false, autoloadBunfig: false },
   plugins: [{

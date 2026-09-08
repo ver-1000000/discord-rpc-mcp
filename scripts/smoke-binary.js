@@ -60,21 +60,25 @@ try {
       console.log('Native credential store: source round-trip passed.');
       if (process.platform === 'darwin') {
         await store.clear();
-        // This random, fake credential is shared across unsigned test executables.
-        // Allow noninteractive access only to this disposable item, never real tokens.
-        execFileSync('/usr/bin/security', ['add-generic-password',
-          '-a', `oauth:${id}`, '-s', 'discord-rpc-mcp', '-w', JSON.stringify(credentials),
-          '-A'], { timeout: 10000 });
+        // Keep Keychain ownership with the executable that created the item.
+        const fixture = join(directory, 'keyring-fixture');
+        execFileSync(resolve('node_modules/.bin/bun'), ['scripts/build-binary.js', 'scripts/keyring-fixture.js', fixture], { stdio: 'inherit', timeout: 30000 });
+        try {
+          for (const operation of ['absent', 'write', 'read', 'delete', 'absent']) {
+            execFileSync(fixture, [id, operation], { cwd: directory, env, stdio: 'inherit', timeout: 15000 });
+          }
+        } finally {
+          execFileSync(fixture, [id, 'delete'], { cwd: directory, env, stdio: 'inherit', timeout: 15000 });
+        }
+      } else {
+        const output = execFileSync(executable, ['status'], { cwd: directory, env: { ...env, DISCORD_CLIENT_ID: id }, timeout: 30000 }).toString();
+        assert.equal(JSON.parse(output).credentialsStored, true);
+        assert.ok(!output.includes('SMOKE_TEST_ONLY'));
+        execFileSync(executable, ['logout'], { cwd: directory, env: { ...env, DISCORD_CLIENT_ID: id }, timeout: 30000 });
       }
-      console.log('Native credential store: standalone read starting.');
-      const output = execFileSync(executable, ['status'], { cwd: directory, env: { ...env, DISCORD_CLIENT_ID: id }, timeout: 30000 }).toString();
-      assert.equal(JSON.parse(output).credentialsStored, true);
-      assert.ok(!output.includes('SMOKE_TEST_ONLY'));
-      console.log('Native credential store: standalone delete starting.');
-      execFileSync(executable, ['logout'], { cwd: directory, env: { ...env, DISCORD_CLIENT_ID: id }, timeout: 30000 });
       await assert.rejects(store.load(), { code: 'LOGIN_REQUIRED' });
     } finally { await store.clear(); }
-    console.log('Native credential store: source write, standalone read and standalone delete passed.');
+    console.log('Native credential store: source and compiled executable checks passed.');
   }
   console.log('Standalone binary: help, explicit env file and MCP stdio passed with an isolated working directory and PATH.');
 } finally {
