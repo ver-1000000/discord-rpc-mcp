@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { commands, subscriptionSchema, eventsSchema } from './commands.js';
 import { BridgeError, publicError } from './errors.js';
+import { registerEventResource } from './event-resource.js';
 
 function result(value) {
   const text = JSON.stringify(value);
@@ -59,6 +60,7 @@ export function createServer(bridge, { allowControl = false } = {}) {
     inputSchema: eventsSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, guarded(({ after, limit }) => bridge.readEvents(after, limit)));
-  server.server.onclose = () => bridge.close();
+  const disposeResource = registerEventResource(server, bridge);
+  server.server.onclose = () => { disposeResource(); bridge.close(); };
   return server;
 }

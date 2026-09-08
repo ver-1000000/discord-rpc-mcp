@@ -4,10 +4,12 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../src/server.js';
 import { commands } from '../src/commands.js';
+import { EventBuffer } from '../src/events.js';
 
 async function fixture(t, allowControl = false) {
   const calls = [];
   const bridge = {
+    events: new EventBuffer(),
     request: async (cmd, args) => { calls.push({ cmd, args }); return { messages: [] }; },
     subscription: async (cmd, args) => { calls.push({ cmd, args }); return { subscribed: true }; },
     readEvents: () => ({ events: [], historyComplete: false }),

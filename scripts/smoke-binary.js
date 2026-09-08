@@ -28,6 +28,12 @@ try {
   transport.stderr.on('data', chunk => { stderr += chunk; });
   await client.connect(transport);
   assert.equal((await client.listTools()).tools.length, 9);
+  assert.equal(client.getServerCapabilities().resources.subscribe, true);
+  assert.equal((await client.listResources()).resources[0].uri, 'discord://events');
+  await client.subscribeResource({ uri: 'discord://events' });
+  const snapshot = await client.readResource({ uri: 'discord://events' });
+  assert.deepEqual(JSON.parse(snapshot.contents[0].text).events, []);
+  await client.unsubscribeResource({ uri: 'discord://events' });
   const result = await client.callTool({ name: 'get_events', arguments: {} });
   assert.equal(result.isError, undefined);
   assert.equal(result.structuredContent.connected, false);

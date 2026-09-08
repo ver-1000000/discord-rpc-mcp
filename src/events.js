@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { EventEmitter } from 'node:events';
 
-export class EventBuffer {
+export class EventBuffer extends EventEmitter {
   streamId = randomUUID();
   items = [];
   sequence = 0;
@@ -8,6 +9,7 @@ export class EventBuffer {
   dropped = 0;
   droppedThrough = 0;
   constructor(maxItems = 100, maxBytes = 1024 * 1024) {
+    super();
     Object.assign(this, { maxItems, maxBytes });
   }
   push(event) {
@@ -16,6 +18,7 @@ export class EventBuffer {
     if (size > this.maxBytes) {
       this.dropped++;
       this.droppedThrough = value.sequence;
+      this.emit('updated');
       return;
     }
     this.items.push({ value, size });
@@ -26,6 +29,7 @@ export class EventBuffer {
       this.dropped++;
       this.droppedThrough = Math.max(this.droppedThrough, removed.value.sequence);
     }
+    this.emit('updated');
   }
   read(after = 0, limit = 20) {
     const values = this.items.filter(item => item.value.sequence > after);
