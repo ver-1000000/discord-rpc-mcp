@@ -28,7 +28,7 @@ Ask it to read a channel, receive new messages, or turn down someone's volume in
 
 Supports Windows, macOS and Linux. Requires the Discord desktop app and an available OS credential store (a Secret Service keyring on Linux).
 
-1. Prepare the executable ([build instructions](docs/development.md))
+1. Download and extract the archive for your OS from [Latest Release](https://github.com/ver-1000000/discord-rpc-mcp/releases/latest)
 2. Create an application in the [Discord Developer Portal](https://discord.com/developers/applications) and add `http://127.0.0.1:8765/callback` as its OAuth2 redirect URI
 3. Copy [.env.example](.env.example) to `.env` and enter your application ID and client secret
 4. Start Discord and run:

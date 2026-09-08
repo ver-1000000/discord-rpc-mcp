@@ -28,7 +28,7 @@ AIアシスタントから、手元のDiscordを読み取ったり操作した�
 
 Windows・macOS・Linuxに対応しています。Discordデスクトップアプリと、利用可能なOSの認証情報ストアが必要です(LinuxではSecret Service対応のキーリング)。
 
-1. 実行ファイルを用意する([ビルド手順](docs/development.md))
+1. [Latest Release](https://github.com/ver-1000000/discord-rpc-mcp/releases/latest)から、自分のOS用のファイルをダウンロードして展開する
 2. [Discord Developer Portal](https://discord.com/developers/applications)でアプリケーションを作り、OAuth2のリダイレクトURIに`http://127.0.0.1:8765/callback`を追加する
 3. [.env.example](.env.example)を`.env`にコピーし、アプリケーションIDとクライアントシークレットを入力する
 4. Discordを起動して、次を実行する
