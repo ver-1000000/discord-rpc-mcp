@@ -49,17 +49,23 @@ try {
     const store = new CredentialStore(id);
     try {
       await assert.rejects(store.load(), { code: 'LOGIN_REQUIRED' });
+      const credentials = { access_token: 'SMOKE_TEST_ONLY', expires_at: Date.now() + 3600000 };
+      await store.save(credentials);
+      assert.deepEqual(await store.load(), credentials);
+      console.log('Native credential store: source round-trip passed.');
       if (process.platform === 'darwin') {
+        await store.clear();
         // This random, fake credential is shared across unsigned test executables.
         // Allow noninteractive access only to this disposable item, never real tokens.
         execFileSync('/usr/bin/security', ['add-generic-password',
-          '-a', `oauth:${id}`, '-s', 'discord-rpc-mcp', '-w', 'SMOKE_TEST_ONLY',
+          '-a', `oauth:${id}`, '-s', 'discord-rpc-mcp', '-w', JSON.stringify(credentials),
           '-A'], { timeout: 10000 });
       }
-      await store.save({ access_token: 'SMOKE_TEST_ONLY', expires_at: Date.now() + 3600000 });
+      console.log('Native credential store: standalone read starting.');
       const output = execFileSync(executable, ['status'], { cwd: directory, env: { ...env, DISCORD_CLIENT_ID: id }, timeout: 30000 }).toString();
       assert.equal(JSON.parse(output).credentialsStored, true);
       assert.ok(!output.includes('SMOKE_TEST_ONLY'));
+      console.log('Native credential store: standalone delete starting.');
       execFileSync(executable, ['logout'], { cwd: directory, env: { ...env, DISCORD_CLIENT_ID: id }, timeout: 30000 });
       await assert.rejects(store.load(), { code: 'LOGIN_REQUIRED' });
     } finally { await store.clear(); }
