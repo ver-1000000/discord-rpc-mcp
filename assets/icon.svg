@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">RPC MCP Bridge</title>
+  <desc id="desc">A mint arch connects periwinkle and turquoise blocks above a dark reflected shadow, on a bordered circular gradient background.</desc>
+
+  <defs>
+    <linearGradient id="background-gradient" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#1E2030" />
+      <stop offset="1" stop-color="#3D405C" />
+    </linearGradient>
+    <!-- Shared geometry keeps the bridge and its flattened reflection aligned. -->
+    <rect id="terminal-shape" width="64" height="64" rx="24" />
+    <path id="arch-shape" d="M 88 104 C 88 68, 172 68, 172 104" fill="none" stroke-width="24" stroke-linecap="round" />
+  </defs>
+
+  <circle id="background" cx="128" cy="128" r="120" fill="url(#background-gradient)" stroke="#151628" stroke-width="5" />
+
+  <!-- A crisp, vertically reflected shadow rather than a blurred drop shadow. -->
+  <g id="shadow" transform="translate(26 250) scale(0.8 -0.8)" fill="#211D46" stroke="#211D46">
+    <use href="#terminal-shape" x="46" y="78" stroke="none" />
+    <use href="#terminal-shape" x="150" y="78" stroke="none" />
+    <use href="#arch-shape" />
+  </g>
+
+  <g id="bridge">
+    <use id="left-endpoint" href="#terminal-shape" x="46" y="78" fill="#8C90F8" />
+    <use id="right-endpoint" href="#terminal-shape" x="150" y="78" fill="#54DFC8" />
+    <use id="arch" href="#arch-shape" stroke="#D5FCEE" />
+  </g>
+</svg>

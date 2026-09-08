@@ -1,0 +1,21 @@
+{
+  "name": "discord-rpc-mcp",
+  "version": "0.1.0",
+  "description": "A local MCP bridge for Discord desktop RPC.",
+  "type": "module",
+  "license": "MIT",
+  "author": "AKAI",
+  "engines": { "node": ">=22" },
+  "bin": { "discord-rpc-mcp": "src/cli.js" },
+  "files": ["src", "assets/icon.svg", "README.md", "LICENSE"],
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "node --test",
+    "check": "node --check src/cli.js && npm test",
+    "prepack": "npm run check"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.5.4"
+  }
+}
