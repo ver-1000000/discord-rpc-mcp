@@ -49,6 +49,13 @@ try {
     const store = new CredentialStore(id);
     try {
       await assert.rejects(store.load(), { code: 'LOGIN_REQUIRED' });
+      if (process.platform === 'darwin') {
+        // Grant only the two test executables access to this disposable item.
+        // Otherwise reading Node's item from Bun prompts for interactive consent.
+        execFileSync('/usr/bin/security', ['add-generic-password',
+          '-a', `oauth:${id}`, '-s', 'discord-rpc-mcp', '-w', 'SMOKE_TEST_ONLY',
+          '-T', process.execPath, '-T', executable], { timeout: 10000 });
+      }
       await store.save({ access_token: 'SMOKE_TEST_ONLY', expires_at: Date.now() + 3600000 });
       const output = execFileSync(executable, ['status'], { cwd: directory, env: { ...env, DISCORD_CLIENT_ID: id }, timeout: 30000 }).toString();
       assert.equal(JSON.parse(output).credentialsStored, true);
