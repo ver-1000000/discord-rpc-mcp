@@ -15,8 +15,13 @@ const result = await Bun.build({
     setup(build) {
       build.onResolve({ filter: /^@napi-rs\/keyring$/ }, () => {
         if (platform === 'linux') return { path: 'unused-native-keyring', namespace: 'keyring-stub' };
+        return { path: 'native-keyring', namespace: 'keyring-native' };
+      });
+      build.onLoad({ filter: /.*/, namespace: 'keyring-native' }, () => {
         const suffix = platform === 'win32' ? '-msvc' : '';
-        return { path: resolve(require.resolve(`@napi-rs/keyring-${platform}-${process.arch}${suffix}`)) };
+        const addon = resolve(require.resolve(`@napi-rs/keyring-${platform}-${process.arch}${suffix}`));
+        // Bun embeds .node files via a statically resolved require, not ESM import.
+        return { contents: `export const AsyncEntry = require(${JSON.stringify(addon)}).AsyncEntry;`, loader: 'js' };
       });
       build.onLoad({ filter: /.*/, namespace: 'keyring-stub' }, () => ({
         contents: 'export class AsyncEntry { constructor() { throw new Error("Use Secret Service on Linux"); } }', loader: 'js',
