@@ -1,0 +1,55 @@
+name: Publish MCP Registry
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mcp-registry
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - name: Verify release bundle
+        run: |
+          node --input-type=module <<'JS'
+          import { readFile } from 'node:fs/promises';
+          import { createHash } from 'node:crypto';
+          import assert from 'node:assert/strict';
+          const server = JSON.parse(await readFile('server.json', 'utf8'));
+          const pkg = JSON.parse(await readFile('package.json', 'utf8'));
+          assert.equal(server.version, pkg.version);
+          for (const bundle of server.packages) {
+            const response = await fetch(bundle.identifier);
+            assert.ok(response.ok, `Download failed: ${response.status}`);
+            const hash = createHash('sha256');
+            for await (const chunk of response.body) hash.update(chunk);
+            assert.equal(hash.digest('hex'), bundle.fileSha256);
+          }
+          JS
+      - name: Install publisher
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -fsSL https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz -o publisher.tar.gz
+          echo 'a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc  publisher.tar.gz' | sha256sum -c -
+          tar -xzf publisher.tar.gz mcp-publisher
+      - name: Publish
+        working-directory: ${{ runner.temp }}
+        run: |
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish "$GITHUB_WORKSPACE/server.json"

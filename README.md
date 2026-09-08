@@ -49,7 +49,9 @@ Windows (PowerShell):
 
 Approve the request in Discord. Your credentials are saved and reused on subsequent connections.
 
-Add this configuration to your MCP client, replacing the paths with your own:
+For an MCPB-compatible client, open the `.mcpb` file from [Latest Release](https://github.com/ver-1000000/discord-rpc-mcp/releases/latest) and select the same `.env` file.
+
+For manual registration, add this configuration to your MCP client, replacing the paths with your own:
 
 ```json
 {

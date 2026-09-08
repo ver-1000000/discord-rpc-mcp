@@ -49,7 +49,9 @@ Windows (PowerShell):
 
 Discordの確認画面で承認してください。認証情報は保存され、次回以降も再利用されます。
 
-MCPクライアントに次の設定を追加します。パスは自分の環境に合わせて変更してください。
+MCPB対応クライアントでは、[Latest Release](https://github.com/ver-1000000/discord-rpc-mcp/releases/latest)の`.mcpb`ファイルを開き、同じ`.env`ファイルを選択してください。
+
+手動で登録する場合は、MCPクライアントに次の設定を追加します。パスは自分の環境に合わせて変更してください。
 
 ```json
 {

@@ -26,6 +26,7 @@
     "check": "node --check src/cli.js && npm test",
     "build:binary": "bun scripts/build-binary.js && node scripts/prepare-binary.js",
     "test:binary": "node scripts/smoke-binary.js",
+    "pack:mcpb": "node scripts/package-mcpb.js",
     "prepack": "npm run check"
   },
   "dependencies": {
@@ -34,7 +35,11 @@
     "@napi-rs/keyring": "^2.0.0",
     "zod": "^4.5.4"
   },
+  "overrides": {
+    "@anthropic-ai/mcpb": { "tmp": "0.2.7" }
+  },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "2.1.2",
     "bun": "^1.4.2"
   }
 }
