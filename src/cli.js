@@ -42,6 +42,8 @@ try {
         expired: value.expires_at <= Date.now(),
         expiresAt: new Date(value.expires_at).toISOString(),
         canRefresh: !!value.refresh_token && !!settings.clientSecret,
+        scopes: value.scopes ?? null,
+        missingScopes: value.scopes ? settings.scopes.filter(scope => !value.scopes.includes(scope)) : null,
       }));
     } else {
       bridge = new Bridge(settings, new Auth(settings, store));

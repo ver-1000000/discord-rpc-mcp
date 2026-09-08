@@ -32,7 +32,7 @@ export class Bridge {
     const credentials = await this.auth.credentials();
     const rpc = await this.connector(this.config.clientId, this.config.env);
     try {
-      await authenticate(rpc, credentials);
+      await authenticate(rpc, credentials, this.config.scopes);
       if (this.closed) throw new BridgeError('BRIDGE_CLOSED', 'The bridge is shutting down.');
       this.subscriptions.clear();
       this.generation++;

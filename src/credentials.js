@@ -37,13 +37,15 @@ function run(args, input) {
 export function validateCredentials(value) {
   if (!value || typeof value.access_token !== 'string' || !value.access_token ||
       !Number.isFinite(value.expires_at) || value.expires_at <= 0 ||
-      (value.refresh_token !== undefined && typeof value.refresh_token !== 'string')) {
+      (value.refresh_token !== undefined && typeof value.refresh_token !== 'string') ||
+      (value.scopes !== undefined && (!Array.isArray(value.scopes) || !value.scopes.every(scope => typeof scope === 'string')))) {
     throw new BridgeError('LOGIN_REQUIRED', 'Run discord-rpc-mcp login to save valid credentials.');
   }
   return {
     access_token: value.access_token,
     expires_at: value.expires_at,
     ...(value.refresh_token ? { refresh_token: value.refresh_token } : {}),
+    ...(value.scopes ? { scopes: [...new Set(value.scopes)] } : {}),
   };
 }
 

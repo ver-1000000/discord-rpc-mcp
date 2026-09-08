@@ -1,7 +1,7 @@
 import { BridgeError } from './errors.js';
 import { validateCredentials } from './credentials.js';
 
-export const SCOPES = ['rpc', 'messages.read'];
+import { DEFAULT_SCOPES as SCOPES, requireScopes } from './scopes.js';
 
 export async function tokenGrant(config, grant, fetcher = fetch, now = Date.now) {
   if (!config.clientSecret) {
@@ -30,30 +30,34 @@ export async function tokenGrant(config, grant, fetcher = fetch, now = Date.now)
     access_token: data.access_token,
     refresh_token: data.refresh_token ?? grant.refresh_token,
     expires_at: now() + data.expires_in * 1000,
+    ...(typeof data.scope === 'string' ? { scopes: data.scope.split(/\s+/).filter(Boolean) } : {}),
   });
 }
 
-export async function authenticate(rpc, credentials) {
+export async function authenticate(rpc, credentials, required = SCOPES) {
   const data = await rpc.request('AUTHENTICATE', { access_token: credentials.access_token });
-  if (!SCOPES.every(scope => data?.scopes?.includes(scope))) {
-    throw new BridgeError('SCOPE_REQUIRED', 'The saved authorization needs rpc and messages.read. Run login again.');
+  if (!Array.isArray(data?.scopes) || !data.scopes.every(scope => typeof scope === 'string')) {
+    throw new BridgeError('SCOPE_REQUIRED', 'Discord did not return granted scopes. Run login again.');
   }
+  requireScopes(data.scopes, required);
+  return data.scopes;
 }
 
 export async function login(config, store, connect, fetcher = fetch) {
   if (!config.clientSecret) throw new BridgeError('CLIENT_SECRET_REQUIRED', 'Set DISCORD_CLIENT_SECRET before login.');
   const rpc = await connect(config.clientId, config.env);
   try {
-    const data = await rpc.request('AUTHORIZE', { client_id: config.clientId, scopes: SCOPES }, 120000);
+    const scopes = config.scopes ?? SCOPES;
+    const data = await rpc.request('AUTHORIZE', { client_id: config.clientId, scopes }, 120000);
     if (typeof data?.code !== 'string' || !data.code) {
       throw new BridgeError('AUTHORIZATION_FAILED', 'Discord did not return an authorization code.');
     }
     const credentials = await tokenGrant(config, {
       grant_type: 'authorization_code', code: data.code, redirect_uri: config.redirectUri,
     }, fetcher);
-    await authenticate(rpc, credentials);
+    credentials.scopes = await authenticate(rpc, credentials, scopes);
     await store.save(credentials);
-    return { authenticated: true, expiresAt: new Date(credentials.expires_at).toISOString() };
+    return { authenticated: true, scopes: credentials.scopes, expiresAt: new Date(credentials.expires_at).toISOString() };
   } finally { rpc.close(); }
 }
 
@@ -68,11 +72,14 @@ export class Auth {
   }
   async load() {
     const value = await this.store.load();
+    if (value.scopes) requireScopes(value.scopes, this.config.scopes ?? SCOPES);
     if (value.expires_at > this.now() + 60000) return value;
     if (!value.refresh_token) throw new BridgeError('LOGIN_REQUIRED', 'Your authorization expired. Run login again.');
     const renewed = await tokenGrant(this.config, {
       grant_type: 'refresh_token', refresh_token: value.refresh_token,
     }, this.fetcher, this.now);
+    renewed.scopes ??= value.scopes;
+    if (renewed.scopes) requireScopes(renewed.scopes, this.config.scopes ?? SCOPES);
     await this.store.save(renewed);
     return renewed;
   }
