@@ -11,7 +11,12 @@ import { randomBytes } from 'node:crypto';
 const directory = await mkdtemp(join(tmpdir(), 'discord-rpc-mcp-binary-'));
 const binary = `discord-rpc-mcp${process.platform === 'win32' ? '.exe' : ''}`;
 const executable = join(directory, binary);
-const env = { PATH: directory, DISCORD_CLIENT_ID: '123456789012345678', ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}) };
+const env = {
+  ...Object.fromEntries(['HOME', 'USER', 'LOGNAME', 'TMPDIR', 'SystemRoot', 'APPDATA', 'LOCALAPPDATA']
+    .filter(name => process.env[name]).map(name => [name, process.env[name]])),
+  PATH: directory,
+  DISCORD_CLIENT_ID: '123456789012345678',
+};
 const client = new Client({ name: 'binary-smoke', version: '1.0.0' });
 try {
   await copyFile(resolve('dist', binary), executable);
