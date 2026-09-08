@@ -60,13 +60,13 @@ export class Rpc {
   decoder = new Decoder();
   constructor(path) {
     this.socket = net.createConnection(path);
-    this.socket.on('error', () => this.fail(new Error('IPC接続エラー')));
-    this.socket.on('close', () => this.fail(new Error('IPC接続が閉じられました')));
+    this.socket.on('error', () => this.fail(new BridgeError('IPC_UNAVAILABLE', 'IPC接続エラー')));
+    this.socket.on('close', () => this.fail(new BridgeError('DISCONNECTED', 'IPC接続が閉じられました')));
     this.socket.on('data', chunk => {
       try {
         for (const { opcode, data } of this.decoder.push(chunk)) {
           if (opcode === 3) { this.socket.write(encode(4, data)); continue; }
-          if (opcode === 2) { this.fail(new Error('Discordが接続を終了しました')); this.close(); return; }
+          if (opcode === 2) { this.fail(new BridgeError('DISCONNECTED', 'Discordが接続を終了しました')); this.close(); return; }
           if (opcode !== 1) continue;
           const key = data.evt === 'READY' ? 'ready' : data.nonce;
           const pending = this.pending.get(key);
@@ -81,7 +81,7 @@ export class Rpc {
           if (data.evt === 'ERROR') pending.reject(rpcError(data.data));
           else pending.resolve(data.data);
         }
-      } catch { this.fail(new Error('不正なIPC応答')); this.close(); }
+      } catch { this.fail(new BridgeError('INVALID_RPC_RESPONSE', '不正なIPC応答')); this.close(); }
     });
   }
   wait(key, timeout) {
@@ -95,7 +95,7 @@ export class Rpc {
     });
   }
   handshake(clientId) {
-    if (this.socket.destroyed) return Promise.reject(new Error('IPC接続が閉じられています'));
+    if (this.socket.destroyed) return Promise.reject(new BridgeError('DISCONNECTED', 'IPC接続が閉じられています'));
     const result = this.wait('ready', 10000);
     this.socket.write(encode(0, { v: 1, client_id: clientId }));
     return result;
@@ -104,7 +104,8 @@ export class Rpc {
     return this.request('AUTHORIZE', { client_id: clientId, scopes: ['rpc', 'messages.read'] }, 120000);
   }
   request(cmd, args, timeout = 10000, evt) {
-    if (this.socket.destroyed) return Promise.reject(new Error('IPC接続が閉じられています'));
+    if (this.socket.destroyed) return Promise.reject(new BridgeError('DISCONNECTED', 'IPC接続が閉じられています'));
+    if (this.pending.size >= 128) return Promise.reject(new BridgeError('RPC_BUSY', 'Too many pending RPC requests.'));
     const nonce = randomUUID();
     const result = this.wait(nonce, timeout);
     this.socket.write(encode(1, { cmd, nonce, args, ...(evt ? { evt } : {}) }));
