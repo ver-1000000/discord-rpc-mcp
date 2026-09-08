@@ -73,3 +73,58 @@ test('例外・過大結果を安全なツールエラーとして返す', async
   const next = await client.callTool({ name: 'get_guilds', arguments: {} });
   assert.equal(JSON.parse(next.content[0].text).code, 'RESULT_TOO_LARGE');
 });
+
+test('SET_ACTIVITYの文書化されたフィールドを省略せずRPCへ渡す', async t => {
+  const { client, calls } = await fixture(t, true);
+  const args = {
+    pid: 1234,
+    activity: {
+      name: 'Example', type: 0, url: null, created_at: 1700000000000,
+      application_id: '123456789012345678', status_display_type: 2,
+      state: null, details: 'Building a bridge', state_url: null, details_url: 'https://example.com',
+      emoji: { name: 'cat', id: '123456789012345679', animated: false },
+      timestamps: { start: 1700000000000, end: 1700000060000 },
+      assets: {
+        large_image: 'large', large_text: 'Large', large_url: 'https://example.com/large',
+        small_image: 'small', small_text: 'Small', small_url: 'https://example.com/small',
+        invite_cover_image: 'cover',
+      },
+      party: { id: 'party', size: [1, 2] },
+      secrets: { join: 'join-example', spectate: 'spectate-example', match: 'match-example' },
+      buttons: [{ label: 'Open', url: 'https://example.com' }],
+      instance: true, flags: 3,
+    },
+  };
+  const result = await client.callTool({ name: 'set_activity', arguments: args });
+  assert.equal(result.isError, undefined);
+  assert.deepEqual(calls, [{ cmd: 'SET_ACTIVITY', args }]);
+});
+
+test('SET_ACTIVITYの表示種類・nullableフィールド・全体解除を扱う', async t => {
+  const { client, calls } = await fixture(t, true);
+  for (const status_display_type of [0, 1, 2, null]) {
+    const result = await client.callTool({
+      name: 'set_activity',
+      arguments: { pid: 1234, activity: { status_display_type, details: null, emoji: null, details_url: null } },
+    });
+    assert.equal(result.isError, undefined);
+    assert.equal(calls.at(-1).args.activity.status_display_type, status_display_type);
+  }
+  const result = await client.callTool({ name: 'set_activity', arguments: { pid: 1234, activity: null } });
+  assert.equal(result.isError, undefined);
+  assert.equal(calls.at(-1).args.activity, null);
+});
+
+test('SET_ACTIVITYの不正な表示種類・RPC非対応type・過大ボタンを拒否する', async t => {
+  const { client, calls } = await fixture(t, true);
+  for (const activity of [
+    { status_display_type: 3 }, { status_display_type: '2' },
+    { type: 1 }, { type: 4 }, { flags: -1 },
+    { buttons: [{ label: 'Open', url: 'https://example.com/' + 'x'.repeat(512) }] },
+    { typo: true },
+  ]) {
+    const result = await client.callTool({ name: 'set_activity', arguments: { pid: 1234, activity } });
+    assert.equal(result.isError, true);
+  }
+  assert.deepEqual(calls, []);
+});

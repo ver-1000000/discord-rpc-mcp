@@ -7,19 +7,30 @@ const obj = z.strictObject;
 const number = (min, max) => z.number().min(min).max(max);
 const device = max => obj({ device_id: text.optional(), volume: number(0, max).optional() });
 const identity = obj({ name: text, url: z.url() });
+// Activity fields referenced by SET_ACTIVITY:
+// https://docs.discord.com/developers/events/gateway-events#activity-object
 const activity = obj({
+  name: text.optional(),
   type: z.union([z.literal(0), z.literal(2), z.literal(3), z.literal(5)]).optional(),
-  state: text.optional(), details: text.optional(),
-  state_url: z.url().optional(), details_url: z.url().optional(),
+  url: z.url().nullable().optional(),
+  created_at: z.number().int().nonnegative().optional(),
+  application_id: id.optional(),
+  status_display_type: z.union([z.literal(0), z.literal(1), z.literal(2)]).nullable().optional()
+    .describe('Member-list status text: 0 = application name, 1 = state, 2 = details.'),
+  state: text.nullable().optional(), details: text.nullable().optional(),
+  state_url: z.url().nullable().optional(), details_url: z.url().nullable().optional(),
+  emoji: obj({ name: text, id: id.optional(), animated: bool }).nullable().optional(),
   timestamps: obj({ start: z.number().int().nonnegative().optional(), end: z.number().int().nonnegative().optional() }).optional(),
   assets: obj({
     large_image: text.optional(), large_text: text.optional(), large_url: z.url().optional(),
     small_image: text.optional(), small_text: text.optional(), small_url: z.url().optional(),
+    invite_cover_image: text.optional(),
   }).optional(),
   party: obj({ id: text.optional(), size: z.tuple([z.number().int().nonnegative(), z.number().int().positive()]).optional() }).optional(),
   secrets: obj({ join: text.optional(), spectate: text.optional(), match: text.optional() }).optional(),
-  buttons: z.array(obj({ label: z.string().min(1).max(32), url: z.url() })).max(2).optional(),
+  buttons: z.array(obj({ label: z.string().min(1).max(32), url: z.url().max(512) })).max(2).optional(),
   instance: bool,
+  flags: z.number().int().nonnegative().optional(),
 });
 
 function command(cmd, description, shape = {}, control = false, readOnly = !control) {
