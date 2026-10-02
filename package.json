@@ -1,6 +1,6 @@
 {
   "name": "discord-rpc-mcp",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A local MCP bridge for Discord desktop RPC.",
   "type": "module",
   "license": "MIT",
@@ -14,7 +14,6 @@
   "files": [
     "src",
     "assets/icon.svg",
-    ".env.example",
     "README.md",
     "README.ja.md",
     "docs",
@@ -26,7 +25,7 @@
     "check": "node --check src/cli.js && npm test",
     "build:binary": "bun scripts/build-binary.js && node scripts/prepare-binary.js",
     "test:binary": "node scripts/smoke-binary.js",
-    "pack:mcpb": "node scripts/package-mcpb.js",
+    "pack:mcpb": "node scripts/package-mcpb.js && node scripts/prepare-registry.js",
     "prepack": "npm run check"
   },
   "dependencies": {
@@ -36,7 +35,9 @@
     "zod": "^4.5.4"
   },
   "overrides": {
-    "@anthropic-ai/mcpb": { "tmp": "0.2.7" }
+    "@anthropic-ai/mcpb": {
+      "tmp": "0.2.7"
+    }
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "2.1.2",

@@ -1,8 +1,10 @@
-import { copyFile, readFile, readdir, writeFile, stat, cp, mkdir } from 'node:fs/promises';
+import { copyFile, readFile, readdir, writeFile, stat, cp, mkdir, rm } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 
-for (const name of ['LICENSE', 'README.md', 'README.ja.md', '.env.example']) {
+// Remove an obsolete template when rebuilding an existing output directory.
+await rm(join('dist', '.env.example'), { force: true });
+for (const name of ['LICENSE', 'README.md', 'README.ja.md']) {
   await copyFile(name, join('dist', name));
 }
 await cp('docs', 'dist/docs', { recursive: true });

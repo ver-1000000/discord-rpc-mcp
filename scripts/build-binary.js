@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const platform = process.platform;
@@ -9,6 +10,7 @@ const outfile = process.argv[3] ?? `dist/discord-rpc-mcp${platform === 'win32' ?
 const result = await Bun.build({
   entrypoints: [process.argv[2] ?? './src/cli.js'],
   minify: true,
+  define: { DISCORD_RPC_MCP_SETUP_LOGO: JSON.stringify(readFileSync(new URL('../assets/icon.svg', import.meta.url), 'utf8')) },
   compile: { outfile, autoloadDotenv: false, autoloadBunfig: false },
   plugins: [{
     name: 'platform-keyring',

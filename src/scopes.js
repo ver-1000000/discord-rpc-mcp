@@ -4,6 +4,7 @@ export const DEFAULT_SCOPES = ['rpc', 'messages.read'];
 export const SUPPORTED_SCOPES = [
   ...DEFAULT_SCOPES, 'rpc.activities.write', 'rpc.notifications.read',
   'rpc.voice.read', 'rpc.voice.write', 'voice',
+  'rpc.video.read', 'rpc.video.write', 'rpc.screenshare.read', 'rpc.screenshare.write',
 ];
 
 export function requestedScopes(value = '') {

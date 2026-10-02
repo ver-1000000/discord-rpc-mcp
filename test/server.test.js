@@ -5,8 +5,9 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../src/server.js';
 import { commands } from '../src/commands.js';
 import { EventBuffer } from '../src/events.js';
+import { BridgeError } from '../src/errors.js';
 
-async function fixture(t, allowControl = false) {
+async function fixture(t, allowControl = false, scopes = ['rpc', 'messages.read', 'rpc.video.write', 'rpc.screenshare.write']) {
   const calls = [];
   const bridge = {
     events: new EventBuffer(),
@@ -15,7 +16,7 @@ async function fixture(t, allowControl = false) {
     readEvents: () => ({ events: [], historyComplete: false }),
     close: () => {},
   };
-  const server = createServer(bridge, { allowControl });
+  const server = createServer(bridge, { allowControl, scopes });
   const client = new Client({ name: 'test', version: '1.0.0' });
   const [a, b] = InMemoryTransport.createLinkedPair();
   await server.connect(a);
@@ -28,16 +29,70 @@ test('標準構成では変更ツールと認証ツールを公開しない', as
   const { client, calls } = await fixture(t);
   const { tools } = await client.listTools();
   assert.equal(tools.length, 9);
-  assert.ok(tools.every(tool => !/^(set_|select_|send_|close_|authorize|authenticate)/.test(tool.name)));
-  assert.equal(tools.find(tool => tool.name === 'get_channel').annotations.readOnlyHint, false);
+  assert.ok(tools.every(tool => !/^(set_|select_|send_|close_|toggle_|authorize|authenticate)/.test(tool.name)));
+  assert.equal(tools.find(tool => tool.name === 'get_channel').annotations.readOnlyHint, true);
   assert.equal(calls.length, 0);
 });
 
-test('変更を有効化すると文書化された全操作と購読を公開する', async t => {
+test('変更を有効化すると対応する全操作と購読を公開する', async t => {
   const { client } = await fixture(t, true);
   const { tools } = await client.listTools();
   assert.equal(tools.length, commands.length + 3);
   assert.equal(tools.find(tool => tool.name === 'set_activity').annotations.destructiveHint, true);
+});
+
+test('映像と画面共有のトグルを反転操作として公開し、指定した引数で一度だけ実行する', async t => {
+  const { client, calls } = await fixture(t, true);
+  const { tools } = await client.listTools();
+  for (const name of ['toggle_video', 'toggle_screenshare']) {
+    const tool = tools.find(tool => tool.name === name);
+    assert.equal(tool.annotations.readOnlyHint, false);
+    assert.equal(tool.annotations.destructiveHint, true);
+    assert.equal(tool.annotations.idempotentHint, false);
+  }
+  for (const [name, args] of [['toggle_video', {}], ['toggle_screenshare', {}], ['toggle_screenshare', { pid: 1234 }]]) {
+    const result = await client.callTool({ name, arguments: args });
+    assert.equal(result.isError, undefined);
+  }
+  assert.deepEqual(calls, [
+    { cmd: 'TOGGLE_VIDEO', args: {} },
+    { cmd: 'TOGGLE_SCREENSHARE', args: {} },
+    { cmd: 'TOGGLE_SCREENSHARE', args: { pid: 1234 } },
+  ]);
+});
+
+test('映像と画面共有の権限不足や不正な引数はトグルを送らずに拒否する', async t => {
+  const missing = await fixture(t, true, ['rpc', 'messages.read']);
+  for (const [name, scope] of [['toggle_video', 'rpc.video.write'], ['toggle_screenshare', 'rpc.screenshare.write']]) {
+    const result = await missing.client.callTool({ name, arguments: {} });
+    assert.equal(result.isError, true);
+    const error = JSON.parse(result.content[0].text);
+    assert.equal(error.code, 'SCOPE_REQUIRED');
+    assert.ok(error.message.includes(scope));
+  }
+  assert.deepEqual(missing.calls, []);
+  const enabled = await fixture(t, true);
+  for (const request of [
+    { name: 'toggle_video', arguments: { enabled: true } },
+    { name: 'toggle_screenshare', arguments: { pid: 0 } },
+    { name: 'toggle_screenshare', arguments: { pid: -1 } },
+    { name: 'toggle_screenshare', arguments: { pid: 1.5 } },
+    { name: 'toggle_screenshare', arguments: { pid: '1234' } },
+    { name: 'toggle_screenshare', arguments: { enabled: false } },
+  ]) {
+    assert.equal((await enabled.client.callTool(request)).isError, true);
+  }
+  assert.deepEqual(enabled.calls, []);
+});
+
+test('トグルがタイムアウトしても自動再実行しない', async t => {
+  const { client, bridge } = await fixture(t, true);
+  let attempts = 0;
+  bridge.request = async () => { attempts++; throw new BridgeError('TIMEOUT', 'RPC request timed out.'); };
+  const result = await client.callTool({ name: 'toggle_video', arguments: {} });
+  assert.equal(result.isError, true);
+  assert.equal(JSON.parse(result.content[0].text).code, 'TIMEOUT');
+  assert.equal(attempts, 1);
 });
 
 test('GET_CHANNELを対応するRPCへ渡し、空配列と未取得を区別する', async t => {
@@ -47,6 +102,7 @@ test('GET_CHANNELを対応するRPCへ渡し、空配列と未取得を区別す
   assert.deepEqual(calls, [{ cmd: 'GET_CHANNEL', args }]);
   assert.equal(first.structuredContent.metadata.messageCount, 0);
   assert.equal(first.structuredContent.metadata.historyComplete, false);
+  assert.equal(first.structuredContent.metadata.mayChangeView, false);
   bridge.request = async () => ({ id: args.channel_id });
   const next = await client.callTool({ name: 'get_channel', arguments: args });
   assert.equal(next.structuredContent.metadata.messageCount, null);

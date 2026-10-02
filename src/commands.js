@@ -33,15 +33,15 @@ const activity = obj({
   flags: z.number().int().nonnegative().optional(),
 });
 
-function command(cmd, description, shape = {}, control = false, readOnly = !control) {
-  return { cmd, name: cmd.toLowerCase(), description, schema: obj(shape), control, readOnly };
+function command(cmd, description, shape = {}, control = false, readOnly = !control, scope) {
+  return { cmd, name: cmd.toLowerCase(), description, schema: obj(shape), control, readOnly, scope };
 }
 
 export const commands = [
   command('GET_GUILDS', 'List guild metadata available to the Discord client.'),
   command('GET_GUILD', 'Get one guild by ID.', { guild_id: id, timeout: z.number().int().min(1).max(10000).optional() }),
   command('GET_CHANNELS', 'List channel metadata for a guild.', { guild_id: id }),
-  command('GET_CHANNEL', 'Read a known channel, DM or group DM. Only the client-loaded message window is available; this can move the Discord view. It is not full history or server-side search.', { channel_id: id }, false, false),
+  command('GET_CHANNEL', 'Read a known channel, DM or group DM by channel ID without selecting it in the Discord UI. Only the client-loaded message window is available; it is not full history or server-side search.', { channel_id: id }),
   command('GET_SELECTED_VOICE_CHANNEL', 'Get the currently selected voice channel, or null.'),
   command('GET_VOICE_SETTINGS', 'Get local voice settings.'),
   command('SELECT_TEXT_CHANNEL', 'Navigate Discord to a channel, or pass null to deselect.', { channel_id: id.nullable() }, true),
@@ -63,6 +63,12 @@ export const commands = [
     automatic_gain_control: bool, echo_cancellation: bool, noise_suppression: bool,
     qos: bool, silence_warning: bool, deaf: bool, mute: bool,
   }, true),
+  // These commands are implemented by a community RPC library, but are not in Discord's public RPC reference.
+  // https://github.com/Khaomi/discord-rpc/blob/main/src/structures/ClientUser.ts
+  command('TOGGLE_VIDEO', 'Toggle the camera in the current call. Inverts the current state; it does not set a desired on/off state. Confirm the current state and obtain user approval before calling. Do not automatically retry after an error or timeout. Requires rpc.video.write; use setup to grant it.', {}, true, false, 'rpc.video.write'),
+  command('TOGGLE_SCREENSHARE', 'Toggle screen sharing in the current call. Inverts the current state; it does not set a desired on/off state. Optional pid selects an application process; omitting it leaves source selection to Discord. Confirm the current state and sharing source and obtain user approval before calling. Do not automatically retry after an error or timeout. Requires rpc.screenshare.write; use setup to grant it.', {
+    pid: z.number().int().positive().optional(),
+  }, true, false, 'rpc.screenshare.write'),
   command('SET_CERTIFIED_DEVICES', 'Set certified device information for the connected application.', {
     devices: z.array(obj({
       type: z.enum(['audioinput', 'audiooutput', 'videoinput']), id: text,

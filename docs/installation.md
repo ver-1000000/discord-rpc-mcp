@@ -1,98 +1,68 @@
 # Installation
 
-Supports Windows, macOS and Linux. Requires the Discord desktop app and an available OS credential store (a Secret Service keyring on Linux).
+Supports Windows, macOS and Linux.
+Run Discord desktop on the same computer as the MCP server.
 
-## 1. Install
+To store authorization tokens securely, an OS credential store is required (Secret Service on Linux).
 
-macOS and Linux:
+## 1. Register and enable the MCP
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/ver-1000000/discord-rpc-mcp/main/install.sh | sh
-```
+### Codex and Claude Code
 
-Windows (PowerShell):
-
-```powershell
-irm https://raw.githubusercontent.com/ver-1000000/discord-rpc-mcp/main/install.ps1 | iex
-```
-
-## 2. Connect Discord
-
-Follow the [Discord setup steps in the README](../README.md#2-connect-discord) and enter the application ID and client secret in the `.env` file at the path printed by the installer. When an agent handles setup, wait for the user to finish entering these values before running the commands below.
-
-Start Discord, then run:
-
-macOS and Linux:
+Install Node.js 22+, npm and Git, then run the command for your client.
 
 ```sh
-"$HOME/.local/share/discord-rpc-mcp/bin/discord-rpc-mcp" --env-file "$HOME/.local/share/discord-rpc-mcp/config/.env" login
+# Codex
+codex mcp add discord-rpc-mcp -- npx -y github:ver-1000000/discord-rpc-mcp
+
+# Claude Code
+claude mcp add --scope user discord-rpc-mcp -- npx -y github:ver-1000000/discord-rpc-mcp
 ```
 
-Windows (PowerShell):
+Reload and enable the MCP in your client.
+`npx` handles fetching and storing the files.
 
-```powershell
-& "$env:LOCALAPPDATA\discord-rpc-mcp\bin\discord-rpc-mcp.exe" --env-file "$env:LOCALAPPDATA\discord-rpc-mcp\config\.env" login
-```
+### MCPB-compatible clients
 
-Approve the request in Discord. Your credentials are saved and reused on subsequent connections.
+Install and enable the `.mcpb` from [Releases](https://github.com/ver-1000000/discord-rpc-mcp/releases) through your client's extension interface.
+No Node.js installation is required.
 
-## 3. Add to your MCP client
+## 2. Ask your agent to set up Discord
 
-Follow only the instructions for the client you use.
+Tell your agent: **Set up discord-rpc-mcp.**
+A local setup page guides you through creating or using a Discord application you own, enabling **Public Client**, entering its Client ID and connecting.
+Check the application name and requested permissions in Discord's authorization prompt, then approve.
 
-### Codex
+Initial setup selects controls and all displayed additional permissions.
+Uncheck any permissions you do not need under **Advanced options**.
 
-macOS and Linux:
+If the browser does not open, open the URL provided by your agent on the same computer.
 
-```sh
-codex mcp add discord-rpc-mcp -- "$HOME/.local/share/discord-rpc-mcp/bin/discord-rpc-mcp" --env-file "$HOME/.local/share/discord-rpc-mcp/config/.env"
-```
+Tell the agent when setup is complete and verify it can retrieve your server list.
+No MCP restart is needed.
 
-Windows (PowerShell):
+## Manually register a standalone binary
 
-```powershell
-codex mcp add discord-rpc-mcp -- "$env:LOCALAPPDATA\discord-rpc-mcp\bin\discord-rpc-mcp.exe" --env-file "$env:LOCALAPPDATA\discord-rpc-mcp\config\.env"
-```
+To register without Node.js, download and extract the archive for your OS and CPU from [Releases](https://github.com/ver-1000000/discord-rpc-mcp/releases).
+Distribution targets are Linux x64 (glibc), Windows x64 and macOS arm64 / x64.
 
-### Claude Code
-
-macOS and Linux:
-
-```sh
-claude mcp add --transport stdio --scope user discord-rpc-mcp -- "$HOME/.local/share/discord-rpc-mcp/bin/discord-rpc-mcp" --env-file "$HOME/.local/share/discord-rpc-mcp/config/.env"
-```
-
-Windows (PowerShell):
-
-```powershell
-claude mcp add --transport stdio --scope user discord-rpc-mcp -- "$env:LOCALAPPDATA\discord-rpc-mcp\bin\discord-rpc-mcp.exe" --env-file "$env:LOCALAPPDATA\discord-rpc-mcp\config\.env"
-```
-
-### Other MCP clients
-
-Add this configuration to your MCP client, using the absolute paths from the installer:
+Save the executable and specify its absolute path in your client's MCP configuration.
+On macOS and Linux it needs executable permissions.
+For clients configured using JSON:
 
 ```json
 {
   "mcpServers": {
     "discord-rpc-mcp": {
-      "command": "/absolute/path/bin/discord-rpc-mcp",
-      "args": ["--env-file", "/absolute/path/config/.env"]
+      "command": "/absolute/path/discord-rpc-mcp"
     }
   }
 }
 ```
 
-On Windows, use a command path such as `C:/path/to/discord-rpc-mcp.exe`. Keep Discord running while using the server.
+On Windows use a path such as `C:/path/to/discord-rpc-mcp.exe`.
+After registration, continue to “Ask your agent to set up Discord” above.
 
-### Claude Desktop and MCPB
+See the [usage guide](usage.md) for permissions, credential storage, event subscriptions and troubleshooting.
 
-After completing Discord authorization in steps 1 and 2, install the `.mcpb` from [Latest Release](https://github.com/ver-1000000/discord-rpc-mcp/releases/latest) in your client and select the same `.env` file. Use the JSON configuration above for clients without MCPB support.
-
-## Verify the connection
-
-Reload the client's MCP configuration and confirm that `get_guilds` returns the server list. The `status` command only checks stored credentials, not Discord connectivity. Restart the MCP server or client only if needed.
-
-Reuse existing configuration and credentials when available, and preserve other MCP entries. Enter secrets in the local `.env` file, not in chat. Start with read-only access; see [Configuration](configuration.md) if controls are wanted.
-
-[Claude Code MCP configuration](https://code.claude.com/docs/en/mcp) · [Back to README](../README.md)
+[Back to README](../README.md)

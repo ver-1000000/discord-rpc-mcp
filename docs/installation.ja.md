@@ -1,98 +1,67 @@
 # インストール
 
-Windows・macOS・Linuxに対応しています。Discordデスクトップアプリと、利用可能なOSの認証情報ストアが必要です(LinuxではSecret Service対応のキーリング)。
+Windows・macOS・Linuxに対応しています。
+認証トークンを安全に保存するため、OSのキーリングが必要です(LinuxではSecret Service対応)。
+Discordデスクトップアプリを、MCPサーバーと同じPCで起動してください。
 
-## 1. インストール
+## 1. MCPを登録・有効化
 
-macOS・Linux:
+### Codex・Claude Code
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/ver-1000000/discord-rpc-mcp/main/install.sh | sh
-```
-
-Windows (PowerShell):
-
-```powershell
-irm https://raw.githubusercontent.com/ver-1000000/discord-rpc-mcp/main/install.ps1 | iex
-```
-
-## 2. Discordと接続
-
-[READMEのDiscord接続手順](../README.ja.md#2-discordと接続)に沿ってアプリを設定し、インストーラーが表示した場所の`.env`にアプリケーションIDとクライアントシークレットを入力してください。Agentが進める場合は、ユーザーの入力完了を待ってから以下を実行します。
-
-Discordを起動して、次を実行してください。
-
-macOS・Linux:
+Node.js 22以降・npm・Gitを用意し、利用するクライアントのコマンドを実行してください。
 
 ```sh
-"$HOME/.local/share/discord-rpc-mcp/bin/discord-rpc-mcp" --env-file "$HOME/.local/share/discord-rpc-mcp/config/.env" login
+# Codexの場合
+codex mcp add discord-rpc-mcp -- npx -y github:ver-1000000/discord-rpc-mcp
+
+# Claude Codeの場合
+claude mcp add --scope user discord-rpc-mcp -- npx -y github:ver-1000000/discord-rpc-mcp
 ```
 
-Windows (PowerShell):
+登録後、クライアントのMCPを再読み込みして有効化してください。
+ファイルの取得や保存先の管理は`npx`が行います。
 
-```powershell
-& "$env:LOCALAPPDATA\discord-rpc-mcp\bin\discord-rpc-mcp.exe" --env-file "$env:LOCALAPPDATA\discord-rpc-mcp\config\.env" login
-```
+### MCPB対応クライアント
 
-Discordの確認画面で承認してください。認証情報は保存され、次回以降も再利用されます。
+[リリース一覧](https://github.com/ver-1000000/discord-rpc-mcp/releases)の`.mcpb`を、クライアントの拡張機能追加からインストール・有効化してください。
+Node.jsの準備は不要です。
 
-## 3. MCPクライアントに登録
+## 2. Agentにセットアップを頼む
 
-利用するクライアントの手順だけ実行してください。
+Agentに **discord-rpc-mcpのセットアップをして** と伝えてください。
+ローカル設定画面の案内に沿って自分のDiscordアプリを作成するか、所有する既存のアプリを使い、**公開クライアント** を有効にし、Client IDを入力して接続します。
+Discordの認可画面でアプリ名と要求権限を確認し、承認してください。
 
-### Codex
+初回は操作系と、表示されているすべての追加権限が選択されています。
+不要な権限は **詳細オプション** でチェックを外せます。
 
-macOS・Linux:
+ブラウザが開かない場合は、Agentが案内するURLを同じPCで開いてください。
 
-```sh
-codex mcp add discord-rpc-mcp -- "$HOME/.local/share/discord-rpc-mcp/bin/discord-rpc-mcp" --env-file "$HOME/.local/share/discord-rpc-mcp/config/.env"
-```
+完了したらAgentに伝え、サーバー一覧を取得できることを確認してください。
+MCPの再起動は不要です。
 
-Windows (PowerShell):
+## 手動で単体バイナリを登録する場合
 
-```powershell
-codex mcp add discord-rpc-mcp -- "$env:LOCALAPPDATA\discord-rpc-mcp\bin\discord-rpc-mcp.exe" --env-file "$env:LOCALAPPDATA\discord-rpc-mcp\config\.env"
-```
+Node.jsを使わずに登録する場合は、[リリース一覧](https://github.com/ver-1000000/discord-rpc-mcp/releases)からOS・CPUに合うアーカイブをダウンロードして展開してください。
+Linux x64(glibc)、Windows x64、macOS arm64 / x64向けを配布しています。
 
-### Claude Code
-
-macOS・Linux:
-
-```sh
-claude mcp add --transport stdio --scope user discord-rpc-mcp -- "$HOME/.local/share/discord-rpc-mcp/bin/discord-rpc-mcp" --env-file "$HOME/.local/share/discord-rpc-mcp/config/.env"
-```
-
-Windows (PowerShell):
-
-```powershell
-claude mcp add --transport stdio --scope user discord-rpc-mcp -- "$env:LOCALAPPDATA\discord-rpc-mcp\bin\discord-rpc-mcp.exe" --env-file "$env:LOCALAPPDATA\discord-rpc-mcp\config\.env"
-```
-
-### その他のMCPクライアント
-
-MCPクライアントに次の設定を追加します。パスはインストーラーが表示した場所の絶対パスに変更してください。
+実行ファイルを保存し、クライアントのMCP設定にその絶対パスを指定してください。
+macOS・Linuxでは実行権限が必要です。
+JSONで設定する場合の例:
 
 ```json
 {
   "mcpServers": {
     "discord-rpc-mcp": {
-      "command": "/absolute/path/bin/discord-rpc-mcp",
-      "args": ["--env-file", "/absolute/path/config/.env"]
+      "command": "/absolute/path/discord-rpc-mcp"
     }
   }
 }
 ```
 
-Windowsでは`command`を`C:/path/to/discord-rpc-mcp.exe`のように指定してください。利用中はDiscordを起動したままにしてください。
+Windowsでは`C:/path/to/discord-rpc-mcp.exe`のように指定してください。
+登録後は、上の「Agentにセットアップを頼む」へ進んでください。
 
-### Claude Desktop・MCPB
+権限・認証情報の保存先・イベントの購読・トラブル対処は[使い方ガイド](usage.md)を参照してください。
 
-上の手順1・2でDiscordの認証まで完了したら、[Latest Release](https://github.com/ver-1000000/discord-rpc-mcp/releases/latest)の`.mcpb`をクライアントにインストールし、設定ファイルとして同じ`.env`を選択してください。MCPB非対応のクライアントでは上のJSON設定を使用します。
-
-## 接続確認
-
-クライアントのMCP設定を再読み込みし、`get_guilds`でサーバー一覧を取得できることを確認してください。`status`は保存済み認証の確認だけで、Discordへの接続確認ではありません。必要な場合だけMCPサーバーやクライアントを再起動してください。
-
-既存の設定・認証がある場合は再利用し、他のMCP設定を上書きしないでください。シークレットはチャットに貼らず、ローカルの`.env`に入力してください。読み取りのみで開始し、操作系を希望する場合は[設定ガイド](configuration.md)を参照してください。
-
-[Claude CodeのMCP設定](https://code.claude.com/docs/en/mcp) · [READMEに戻る](../README.ja.md)
+[READMEに戻る](../README.ja.md)

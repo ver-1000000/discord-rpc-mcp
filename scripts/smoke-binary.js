@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, copyFile, chmod, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, copyFile, chmod, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -15,7 +15,7 @@ const env = {
   ...Object.fromEntries(['HOME', 'USER', 'LOGNAME', 'TMPDIR', 'SystemRoot', 'APPDATA', 'LOCALAPPDATA']
     .filter(name => process.env[name]).map(name => [name, process.env[name]])),
   PATH: directory,
-  DISCORD_CLIENT_ID: '123456789012345678',
+  DISCORD_CONFIG_DIR: join(directory, 'config'),
 };
 const client = new Client({ name: 'binary-smoke', version: '1.0.0' });
 try {
@@ -23,11 +23,10 @@ try {
   await chmod(executable, 0o755);
   // The executable must neither need external commands nor autoload the working directory's .env.
   await writeFile(join(directory, '.env'), 'DISCORD_ALLOW_CONTROL=1\n');
-  await writeFile(join(directory, 'settings.env'), 'DISCORD_CLIENT_ID=123456789012345678\n');
   assert.match(execFileSync(executable, ['--help'], { cwd: directory, env, timeout: 10000 }).toString(), /credential store/);
   const transport = new StdioClientTransport({
     command: executable,
-    args: ['--env-file', join(directory, 'settings.env')],
+    args: [],
     cwd: directory,
     env,
     stderr: 'pipe',
@@ -35,7 +34,7 @@ try {
   let stderr = '';
   transport.stderr.on('data', chunk => { stderr += chunk; });
   await client.connect(transport);
-  assert.equal((await client.listTools()).tools.length, 9);
+  assert.equal((await client.listTools()).tools.length, 11);
   assert.equal(client.getServerCapabilities().resources.subscribe, true);
   assert.equal((await client.listResources()).resources[0].uri, 'discord://events');
   await client.subscribeResource({ uri: 'discord://events' });
@@ -46,6 +45,12 @@ try {
   assert.equal(result.isError, undefined);
   assert.equal(result.structuredContent.connected, false);
   assert.deepEqual(result.structuredContent.events, []);
+  const started = await client.callTool({ name: 'setup', arguments: {} });
+  assert.equal(started.isError, undefined);
+  const page = await fetch(started.structuredContent.setupUrl);
+  assert.equal(page.status, 200);
+  assert.match(await page.text(), /Connect Discord/);
+  assert.equal((await client.callTool({ name: 'setup_status', arguments: {} })).structuredContent.configured, false);
   await client.close();
   assert.equal(stderr, '');
   if (process.platform === 'win32' || process.platform === 'darwin') {
@@ -71,16 +76,18 @@ try {
           execFileSync(fixture, [id, 'delete'], { cwd: directory, env, stdio: 'inherit', timeout: 15000 });
         }
       } else {
-        const output = execFileSync(executable, ['status'], { cwd: directory, env: { ...env, DISCORD_CLIENT_ID: id }, timeout: 30000 }).toString();
+        await mkdir(env.DISCORD_CONFIG_DIR, { recursive: true });
+        await writeFile(join(env.DISCORD_CONFIG_DIR, 'settings.json'), JSON.stringify({ clientId: id, redirectUri: 'http://127.0.0.1:8765/callback', allowControl: false, scopes: ['rpc', 'messages.read'], storage: 'keyring' }), { mode: 0o600 });
+        const output = execFileSync(executable, ['status'], { cwd: directory, env, timeout: 30000 }).toString();
         assert.equal(JSON.parse(output).credentialsStored, true);
         assert.ok(!output.includes('SMOKE_TEST_ONLY'));
-        execFileSync(executable, ['logout'], { cwd: directory, env: { ...env, DISCORD_CLIENT_ID: id }, timeout: 30000 });
+        execFileSync(executable, ['logout'], { cwd: directory, env, timeout: 30000 });
       }
       await assert.rejects(store.load(), { code: 'LOGIN_REQUIRED' });
     } finally { await store.clear(); }
     console.log('Native credential store: source and compiled executable checks passed.');
   }
-  console.log('Standalone binary: help, explicit env file and MCP stdio passed with an isolated working directory and PATH.');
+  console.log('Standalone binary: help, unconfigured MCP stdio and embedded setup page passed with an isolated working directory and PATH.');
 } finally {
   await client.close();
   await rm(directory, { recursive: true, force: true });

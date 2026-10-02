@@ -3,19 +3,25 @@
   "name": "io.github.ver-1000000/discord-rpc-mcp",
   "title": "Discord RPC MCP",
   "description": "Read Discord channels, follow new messages and control calls from your AI assistant.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "repository": {
     "url": "https://github.com/ver-1000000/discord-rpc-mcp",
     "source": "github"
   },
-  "icons": [{
-    "src": "https://raw.githubusercontent.com/ver-1000000/discord-rpc-mcp/v0.1.0/assets/icon.png",
-    "mimeType": "image/png"
-  }],
-  "packages": [{
-    "registryType": "mcpb",
-    "identifier": "https://github.com/ver-1000000/discord-rpc-mcp/releases/download/v0.1.0/discord-rpc-mcp-v0.1.0.mcpb",
-    "fileSha256": "b406198348e7f911a3c718c0cb8b2bf5cdc5544958e7c3934610b0d11b59c487",
-    "transport": { "type": "stdio" }
-  }]
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/ver-1000000/discord-rpc-mcp/v1.0.0/assets/icon.png",
+      "mimeType": "image/png"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/ver-1000000/discord-rpc-mcp/releases/download/v1.0.0/discord-rpc-mcp-v1.0.0.mcpb",
+      "fileSha256": "0de78ce2e957a99b7a188708a3dd053d687f05eb825f15fef845d00624f30a41",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
 }

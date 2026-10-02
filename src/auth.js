@@ -1,12 +1,10 @@
+import { createHash, randomBytes } from 'node:crypto';
 import { BridgeError } from './errors.js';
 import { validateCredentials } from './credentials.js';
 
 import { DEFAULT_SCOPES as SCOPES, requireScopes } from './scopes.js';
 
 export async function tokenGrant(config, grant, fetcher = fetch, now = Date.now) {
-  if (!config.clientSecret) {
-    throw new BridgeError('CLIENT_SECRET_REQUIRED', 'Set DISCORD_CLIENT_SECRET for login or token renewal.');
-  }
   let response;
   try {
     response = await fetcher('https://discord.com/api/oauth2/token', {
@@ -14,7 +12,8 @@ export async function tokenGrant(config, grant, fetcher = fetch, now = Date.now)
       redirect: 'error',
       signal: AbortSignal.timeout(15000),
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ client_id: config.clientId, client_secret: config.clientSecret, ...grant }),
+      body: new URLSearchParams({ client_id: config.clientId,
+        ...(config.clientSecret ? { client_secret: config.clientSecret } : {}), ...grant }),
     });
   } catch { throw new BridgeError('OAUTH_UNAVAILABLE', 'Could not reach the Discord OAuth endpoint.'); }
   let data;
@@ -43,19 +42,27 @@ export async function authenticate(rpc, credentials, required = SCOPES) {
   return data.scopes;
 }
 
-export async function login(config, store, connect, fetcher = fetch) {
-  if (!config.clientSecret) throw new BridgeError('CLIENT_SECRET_REQUIRED', 'Set DISCORD_CLIENT_SECRET before login.');
+export async function login(config, store, connect, fetcher = fetch, progress = () => {}) {
+  const verifier = config.clientSecret ? undefined : randomBytes(32).toString('base64url');
+  const pkce = verifier ? { code_challenge: createHash('sha256').update(verifier).digest('base64url'),
+    code_challenge_method: 'S256' } : {};
+  progress('connect');
   const rpc = await connect(config.clientId, config.env);
   try {
     const scopes = config.scopes ?? SCOPES;
-    const data = await rpc.request('AUTHORIZE', { client_id: config.clientId, scopes }, 120000);
+    progress('authorize');
+    const data = await rpc.request('AUTHORIZE', { client_id: config.clientId, scopes, ...pkce }, 120000);
     if (typeof data?.code !== 'string' || !data.code) {
       throw new BridgeError('AUTHORIZATION_FAILED', 'Discord did not return an authorization code.');
     }
+    progress('token_exchange');
     const credentials = await tokenGrant(config, {
       grant_type: 'authorization_code', code: data.code, redirect_uri: config.redirectUri,
+      ...(verifier ? { code_verifier: verifier } : {}),
     }, fetcher);
+    progress('authenticate');
     credentials.scopes = await authenticate(rpc, credentials, scopes);
+    progress('save_credentials');
     await store.save(credentials);
     return { authenticated: true, scopes: credentials.scopes, expiresAt: new Date(credentials.expires_at).toISOString() };
   } finally { rpc.close(); }
@@ -75,10 +82,11 @@ export class Auth {
     if (value.scopes) requireScopes(value.scopes, this.config.scopes ?? SCOPES);
     if (value.expires_at > this.now() + 60000) return value;
     if (!value.refresh_token) throw new BridgeError('LOGIN_REQUIRED', 'Your authorization expired. Run login again.');
-    const renewed = await tokenGrant(this.config, {
+    const renewed = await tokenGrant({ ...this.config, clientSecret: this.config.clientSecret ?? value.client_secret }, {
       grant_type: 'refresh_token', refresh_token: value.refresh_token,
     }, this.fetcher, this.now);
     renewed.scopes ??= value.scopes;
+    if (value.client_secret) renewed.client_secret = value.client_secret;
     if (renewed.scopes) requireScopes(renewed.scopes, this.config.scopes ?? SCOPES);
     await this.store.save(renewed);
     return renewed;

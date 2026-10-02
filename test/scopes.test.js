@@ -11,7 +11,7 @@ test('追加スコープを重複なく指定し、未対応スコープは拒�
 });
 
 test('追加権限を要求し、実際に認証されたスコープだけを保存する', async () => {
-  const scopes = requestedScopes('rpc.notifications.read');
+  const scopes = requestedScopes('rpc.video.read rpc.video.write rpc.screenshare.read rpc.screenshare.write');
   let saved;
   await login({ ...settings, scopes }, { save: async value => { saved = value; } }, async () => ({
     request: async (cmd, args) => {
