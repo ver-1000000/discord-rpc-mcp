@@ -25,6 +25,12 @@ Ask it to read a channel, receive new messages, or turn down someone's volume in
 | `send_activity_join_invite`, `close_activity_request` | Accept or reject activity join requests |
 | `set_certified_devices` | Set device information |
 
+<div align="center">
+
+https://github.com/user-attachments/assets/bb4f617a-f284-445f-a008-8b9b95eafe7b
+
+</div>
+
 ## Setup
 
 To store authorization tokens securely, an OS credential store is required (Secret Service on Linux).

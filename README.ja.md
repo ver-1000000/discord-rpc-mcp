@@ -25,6 +25,12 @@ DiscordデスクトップアプリのRPCを、MCPから扱うためのサーバ�
 | `send_activity_join_invite`, `close_activity_request` | アクティビティへの参加リクエストを承認・拒否 |
 | `set_certified_devices` | デバイス情報を設定 |
 
+<div align="center">
+
+https://github.com/user-attachments/assets/00c599d7-01ff-45cf-be04-74ec699a8811
+
+</div>
+
 ## セットアップ
 
 認証トークンを安全に保存するため、OSのキーリングが必要です(LinuxではSecret Service対応)。
