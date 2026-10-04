@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "discord-rpc-mcp",
   "display_name": "Discord RPC MCP",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Read Discord channels, follow new messages and control calls from your AI assistant.",
   "author": {
     "name": "AKAI",

@@ -44,7 +44,7 @@ MCPのインストールと有効化が終わったら、エージェントに *
 | ツール | 用途 |
 | --- | --- |
 | `get_guilds`, `get_guild`, `get_channels` | サーバー・チャンネルの情報を取得 |
-| `get_channel` | チャンネル・DM・グループDMの投稿を読む |
+| `get_channel` | チャンネル・DM・グループDMの投稿を読む(返却項目を指定可能) |
 | `get_selected_voice_channel`, `get_voice_settings` | 通話先・音声設定を確認 |
 | `subscribe`, `unsubscribe`, `get_events` | 新着投稿や入退室などを購読・取得 |
 | `select_text_channel`, `select_voice_channel` | 表示チャンネルの切り替え・通話への参加や退出 |

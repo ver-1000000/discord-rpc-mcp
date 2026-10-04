@@ -7,6 +7,9 @@ const obj = z.strictObject;
 const number = (min, max) => z.number().min(min).max(max);
 const device = max => obj({ device_id: text.optional(), volume: number(0, max).optional() });
 const identity = obj({ name: text, url: z.url() });
+const fields = z.array(z.string().max(256).regex(/^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$/))
+  .min(1).max(64).optional()
+  .describe('Optional dotted field paths relative to data, e.g. messages.content or messages.embeds.rawDescription. Applied to every array element; selecting a parent includes all its children. Missing fields are omitted; nulls and array order/length are preserved. Omit to return full RPC data. No wildcards or array indices.');
 // Activity fields referenced by SET_ACTIVITY:
 // https://docs.discord.com/developers/events/gateway-events#activity-object
 const activity = obj({
@@ -41,7 +44,7 @@ export const commands = [
   command('GET_GUILDS', 'List guild metadata available to the Discord client.'),
   command('GET_GUILD', 'Get one guild by ID.', { guild_id: id, timeout: z.number().int().min(1).max(10000).optional() }),
   command('GET_CHANNELS', 'List channel metadata for a guild.', { guild_id: id }),
-  command('GET_CHANNEL', 'Read a known channel, DM or group DM by channel ID without selecting it in the Discord UI. Only the client-loaded message window is available; it is not full history or server-side search.', { channel_id: id }),
+  command('GET_CHANNEL', 'Read a known channel, DM or group DM by channel ID without selecting it in the Discord UI. Only the client-loaded message window is available; it is not full history or server-side search. For summaries or cross-channel reads, use fields to reduce response size: ["id", "name", "messages.id", "messages.content", "messages.timestamp", "messages.author.username", "messages.embeds.rawTitle", "messages.embeds.rawDescription", "messages.embeds.url"]. Without fields, returns full RPC data.', { channel_id: id, fields }),
   command('GET_SELECTED_VOICE_CHANNEL', 'Get the currently selected voice channel, or null.'),
   command('GET_VOICE_SETTINGS', 'Get local voice settings.'),
   command('SELECT_TEXT_CHANNEL', 'Navigate Discord to a channel, or pass null to deselect.', { channel_id: id.nullable() }, true),

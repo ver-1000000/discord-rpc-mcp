@@ -44,7 +44,7 @@ For manual installation or detailed instructions, see the [installation guide](d
 | Tools | Purpose |
 | --- | --- |
 | `get_guilds`, `get_guild`, `get_channels` | Get server and channel information |
-| `get_channel` | Read a channel, DM or group DM |
+| `get_channel` | Read a channel, DM or group DM; optionally select response fields |
 | `get_selected_voice_channel`, `get_voice_settings` | Check your voice channel and settings |
 | `subscribe`, `unsubscribe`, `get_events` | Subscribe to and read messages, voice events and more |
 | `select_text_channel`, `select_voice_channel` | Switch channels, join or leave a call |

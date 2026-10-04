@@ -108,6 +108,92 @@ test('GET_CHANNELを対応するRPCへ渡し、空配列と未取得を区別す
   assert.equal(next.structuredContent.metadata.messageCount, null);
 });
 
+test('GET_CHANNELは指定した項目を配列の各要素から返し、fieldsをRPCへ送らない', async t => {
+  const { client, calls, bridge } = await fixture(t);
+  const channel_id = '123456789012345678';
+  const data = {
+    id: channel_id, name: 'llm', topic: 'Not selected',
+    messages: [
+      { id: '123456789012345679', content: 'A link', author: { username: 'alice', avatar: 'Not selected' },
+        embeds: [{ rawTitle: 'Title', rawDescription: 'Description', image: { url: 'Not selected' } }], content_parsed: ['Not selected'] },
+      { id: '123456789012345680', content: '', author: null, embeds: [] },
+      { id: '123456789012345681', content: null },
+    ],
+  };
+  const original = structuredClone(data);
+  bridge.request = async (cmd, args) => { calls.push({ cmd, args }); return data; };
+  const result = await client.callTool({ name: 'get_channel', arguments: {
+    channel_id, fields: ['id', 'name', 'messages.id', 'messages.content', 'messages.author.username',
+      'messages.embeds.rawTitle', 'messages.embeds.rawDescription', 'messages.unknown', 'unknown'],
+  } });
+  assert.equal(result.isError, undefined);
+  assert.deepEqual(calls, [{ cmd: 'GET_CHANNEL', args: { channel_id } }]);
+  assert.deepEqual(result.structuredContent, {
+    data: { id: channel_id, name: 'llm', messages: [
+      { id: '123456789012345679', content: 'A link', author: { username: 'alice' },
+        embeds: [{ rawTitle: 'Title', rawDescription: 'Description' }] },
+      { id: '123456789012345680', content: '', author: null, embeds: [] },
+      { id: '123456789012345681', content: null },
+    ] },
+    metadata: { historyComplete: false, messageCount: 3, source: 'discord-client', mayChangeView: false },
+  });
+  assert.deepEqual(JSON.parse(result.content[0].text), result.structuredContent);
+  assert.deepEqual(data, original);
+  const full = await client.callTool({ name: 'get_channel', arguments: { channel_id } });
+  assert.deepEqual(full.structuredContent.data, original);
+});
+
+test('親項目の指定は子項目と重複しても順序によらず全体を返す', async t => {
+  const { client, bridge } = await fixture(t);
+  const data = { messages: [{ content: 'First', embeds: [{ rawTitle: 'Title' }] }, { content: 'Second' }], name: 'llm' };
+  bridge.request = async () => data;
+  for (const fields of [['messages.content', 'messages', 'messages.content'], ['messages', 'messages.embeds.rawTitle']]) {
+    const result = await client.callTool({ name: 'get_channel', arguments: { channel_id: '123456789012345678', fields } });
+    assert.deepEqual(result.structuredContent.data, { messages: data.messages });
+  }
+});
+
+test('項目の指定は存在しない項目を作らず、投稿件数とnull応答を保つ', async t => {
+  const { client, bridge } = await fixture(t);
+  const args = { channel_id: '123456789012345678', fields: ['messages.unknown'] };
+  bridge.request = async () => ({ id: args.channel_id, messages: [{ content: 'First' }, { content: 'Second' }] });
+  const projected = await client.callTool({ name: 'get_channel', arguments: args });
+  assert.deepEqual(projected.structuredContent.data, { messages: [{}, {}] });
+  assert.equal(projected.structuredContent.metadata.messageCount, 2);
+  const withoutMessages = await client.callTool({ name: 'get_channel', arguments: { ...args, fields: ['name', 'id.unknown'] } });
+  assert.deepEqual(withoutMessages.structuredContent.data, {});
+  assert.equal(withoutMessages.structuredContent.metadata.messageCount, 2);
+  bridge.request = async () => null;
+  const empty = await client.callTool({ name: 'get_channel', arguments: args });
+  assert.equal(empty.structuredContent.data, null);
+  assert.equal(empty.structuredContent.metadata.messageCount, null);
+});
+
+test('不正な項目パスや上限超過はRPC実行前に拒否する', async t => {
+  const { client, calls } = await fixture(t);
+  for (const fields of [[], [''], ['messages..content'], ['messages.0.content'], ['messages[0].content'],
+    ['messages.*'], ['messages.content.'], ['x'.repeat(257)], Array(65).fill('name'), 'name', [1]]) {
+    const result = await client.callTool({ name: 'get_channel', arguments: { channel_id: '123456789012345678', fields } });
+    assert.equal(result.isError, true, JSON.stringify(fields));
+  }
+  const other = await client.callTool({ name: 'get_guilds', arguments: { fields: ['id'] } });
+  assert.equal(other.isError, true);
+  assert.deepEqual(calls, []);
+});
+
+test('返却上限は項目を絞った後に適用する', async t => {
+  const { client, bridge } = await fixture(t);
+  const channel_id = '123456789012345678';
+  bridge.request = async () => ({ id: channel_id, messages: [{ content: 'Keep', content_parsed: 'x'.repeat(2 * 1024 * 1024) }] });
+  const full = await client.callTool({ name: 'get_channel', arguments: { channel_id } });
+  assert.equal(JSON.parse(full.content[0].text).code, 'RESULT_TOO_LARGE');
+  const small = await client.callTool({ name: 'get_channel', arguments: { channel_id, fields: ['messages.content'] } });
+  assert.equal(small.isError, undefined);
+  assert.deepEqual(small.structuredContent.data, { messages: [{ content: 'Keep' }] });
+  const large = await client.callTool({ name: 'get_channel', arguments: { channel_id, fields: ['messages'] } });
+  assert.equal(JSON.parse(large.content[0].text).code, 'RESULT_TOO_LARGE');
+});
+
 test('不正な引数と購読の対象不足をRPC実行前に拒否する', async t => {
   const { client, calls } = await fixture(t);
   for (const request of [

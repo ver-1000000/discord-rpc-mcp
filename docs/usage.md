@@ -6,6 +6,31 @@ For installation and initial setup, see the [installation guide](installation.md
 
 Use `get_channel` to read a channel, DM or group DM by channel ID without selecting it in the Discord UI. Messages are limited to what the Discord client has loaded. Full-history search and normal message sending, editing and deletion are not supported.
 
+For summaries or reading across channels, pass `fields` to reduce response size:
+
+```json
+{
+  "channel_id": "YOUR_CHANNEL_ID",
+  "fields": [
+    "id", "name",
+    "messages.id", "messages.content", "messages.timestamp",
+    "messages.author.username",
+    "messages.embeds.rawTitle", "messages.embeds.rawDescription", "messages.embeds.url"
+  ]
+}
+```
+
+Paths are relative to `data` and select existing RPC fields without summarizing or rewriting their values. Include embed titles and descriptions when reading link-only posts. Add `messages.attachments.filename` and `messages.attachments.url` when you need attachments.
+
+- Omit `fields` to return the full RPC data
+- Use 1–64 dotted paths, each at most 256 characters, with no wildcards or array indices
+- Array paths apply to every element, preserving array order and length
+- Selecting a parent (for example, `messages.author`) includes its entire value
+- Missing fields are omitted; null values and empty arrays remain unchanged
+- `metadata` is unaffected; `messageCount` counts messages in the original RPC result even if you omit `messages`
+
+The 2 MiB response limit applies after field selection.
+
 ## Permissions and controls
 
 Ask your agent to call `setup` to change permissions. Every setup page opens with all displayed additional permissions selected. Initial setup also enables **Enable controls**; reopening setup preserves this control setting.
